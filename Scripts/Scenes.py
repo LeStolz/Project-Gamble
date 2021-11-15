@@ -81,9 +81,9 @@ class SnakeGameScene(Scene):
 		self.snake_length = 4
 		self.snake_rects = [
 			self.game.draw_rect(
-				x=200,
-				y=self.game.DISPLAY_H // 2,
-				w=self.SIZE, h=self.SIZE, color=self.game.GREEN
+				x=randint(0 + self.SIZE, self.game.DISPLAY_W - self.SIZE),
+				y=randint(0 + self.SIZE, self.game.DISPLAY_H - self.SIZE),
+				w=self.SIZE, h=self.SIZE, color=self.game.RED
 			)
 		]
 
@@ -155,6 +155,9 @@ class SnakeGameScene(Scene):
 					self.game.current_scene = self.game.scenes['Game Over']
 
 					self.__init__(self.game, self.parent, self.title)
+
+					self.game.display.fill(self.game.BLACK)
+					self.game.reset_input()
 
 					self.running = False
 
