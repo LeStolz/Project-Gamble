@@ -2,8 +2,8 @@ import pygame
 from Game import Game
 
 
-g = Game()
+game = Game()
 # Abcsdddddddd.
 # Hello
-while g.running:
-	g.current_scene.draw_scene()
+while game.running:
+	game.current_scene.draw_scene()
