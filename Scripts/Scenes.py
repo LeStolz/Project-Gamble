@@ -2,7 +2,7 @@ import pygame
 from copy import copy
 from random import randint
 from Classes import Vector
-from random import randrange
+from random import shuffle
 
 
 class Scene:
@@ -182,107 +182,64 @@ class SnakeGameScene(Scene):
 
 		self.direction.normalize()
 
-# ================================================================================================================
 
 class MainGameScene(Scene):
 	def __init__(self, game, parent, title):
 		Scene.__init__(self, game, parent, title)
+
 		self.direction = Vector()
-		self.car_x1, self.car_x2, self.car_x3, self.car_x4, self.car_x5 = 0, 0, 0, 0, 0
+
+		self.width_car = 100
+		self.height_car = 50
+		self.finishLine = self.game.DISPLAY_W - 150
+		self.Cars = [[0, self.game.DISPLAY_H / 6], [0, self.game.DISPLAY_H / 6 * 2], [0,self.game.DISPLAY_H / 6 * 3], [0, self.game.DISPLAY_H / 6 * 4], [0,  self.game.DISPLAY_H / 6 * 5]]
+
 
 	def draw_scene(self):
 		self.running = True
+
+		Car.speed_car(self)
+
 		while self.running:	
 			self.check_input()
+
 			self.game.display.fill(self.game.BLACK)
 			self.game.window.blit(self.game.display, (0, 0))
-			self.draw_car1()
-			self.draw_car2()
-			self.draw_car3()
-			self.draw_car4()
-			self.draw_car5()
+
+			Car.draw_car(self, 0)
+			Car.draw_car(self, 1)
+			Car.draw_car(self, 2)
+			Car.draw_car(self, 3)
+			Car.draw_car(self, 4)
+
 			pygame.display.update()
 
 
-	def draw_car1(self):
-		self.speed_car()
-		self.pos_car()
-		carSurface = pygame.Surface((100, 50))
-		pygame.draw.polygon(carSurface, self.game.RED, ((15, 0), (65, 0), (85, 15), (100, 15), (100, 40), (0, 40), (0, 15)))
-		pygame.draw.circle(carSurface, self.game.GREEN, (15, 40), 10)
-		pygame.draw.circle(carSurface, self.game.GREEN, (85, 40), 10)
-		self.game.window.blit(carSurface, (self.car_x1, self.game.DISPLAY_H / 6))
-
-	def draw_car2(self):
-		self.speed_car()
-		self.pos_car()
-		carSurface = pygame.Surface((100, 50))
-		pygame.draw.polygon(carSurface, self.game.RED, ((15, 0), (65, 0), (85, 15), (100, 15), (100, 40), (0, 40), (0, 15)))
-		pygame.draw.circle(carSurface, self.game.GREEN, (15, 40), 10)
-		pygame.draw.circle(carSurface, self.game.GREEN, (85, 40), 10)
-		self.game.window.blit(carSurface, (self.car_x2, 2* self.game.DISPLAY_H / 6))
-	
-	def draw_car3(self):
-		self.speed_car()
-		self.pos_car()
-		carSurface = pygame.Surface((100, 50))
-		pygame.draw.polygon(carSurface, self.game.RED, ((15, 0), (65, 0), (85, 15), (100, 15), (100, 40), (0, 40), (0, 15)))
-		pygame.draw.circle(carSurface, self.game.GREEN, (15, 40), 10)
-		pygame.draw.circle(carSurface, self.game.GREEN, (85, 40), 10)
-		self.game.window.blit(carSurface, (self.car_x3, 3 * self.game.DISPLAY_H / 6))
-	
-	def draw_car4(self):
-		self.speed_car()
-		self.pos_car()
-		carSurface = pygame.Surface((100, 50))
-		pygame.draw.polygon(carSurface, self.game.RED, ((15, 0), (65, 0), (85, 15), (100, 15), (100, 40), (0, 40), (0, 15)))
-		pygame.draw.circle(carSurface, self.game.GREEN, (15, 40), 10)
-		pygame.draw.circle(carSurface, self.game.GREEN, (85, 40), 10)
-		self.game.window.blit(carSurface, (self.car_x4, 4 * self.game.DISPLAY_H / 6))
-	
-	def draw_car5(self):
-		self.speed_car()
-		self.pos_car()
-		carSurface = pygame.Surface((100, 50))
-		pygame.draw.polygon(carSurface, self.game.RED, ((15, 0), (65, 0), (85, 15), (100, 15), (100, 40), (0, 40), (0, 15)))
-		pygame.draw.circle(carSurface, self.game.GREEN, (15, 40), 10)
-		pygame.draw.circle(carSurface, self.game.GREEN, (85, 40), 10)
-		self.game.window.blit(carSurface, (self.car_x5, 5 * self.game.DISPLAY_H / 6))
-	
-	def speed_car(self):
-		speed_car = [0.1, 0.12, 0.14, 0.16, 0.18]
-		
-		if (self.car_x1 == 0):
-			n = randrange(0, 5, 1)
-			self.speed_car1 = speed_car[n]
-			del speed_car[n]
-		if (self.car_x2 == 0):
-			n = randrange(0, 4, 1)
-			self.speed_car2 = speed_car[n]
-			del speed_car[n]
-		if (self.car_x3 == 0):
-			n = randrange(0, 3, 1)
-			self.speed_car3 =speed_car[n]
-			del speed_car[n]
-		if (self.car_x4 == 0):
-			n = randrange(0, 2, 1)
-			self.speed_car4 = speed_car[n]
-			del speed_car[n]
-		if (self.car_x5 == 0):
-			n = 0
-			self.speed_car5 =speed_car[n]
-			del speed_car[n]
-
-	def pos_car(self):
-		if (self.car_x1 >= self.game.DISPLAY_W - 120 and self.car_x2 >= self.game.DISPLAY_W - 120 and self.car_x3 >= self.game.DISPLAY_W - 120 and self.car_x4 >= self.game.DISPLAY_W - 120 and self.car_x5 >= self.game.DISPLAY_W - 120):
-			self.car_x1, self.car_x2, self.car_x3, self.car_x4, self.car_x5  = 0, 0, 0, 0, 0 	
-		else:
-			if (self.car_x1 < self.game.DISPLAY_W - 120): self.car_x1 += self.speed_car1
-			if (self.car_x2 < self.game.DISPLAY_W - 120): self.car_x2 += self.speed_car2
-			if (self.car_x3 < self.game.DISPLAY_W - 120): self.car_x3 += self.speed_car3
-			if (self.car_x4 < self.game.DISPLAY_W - 120): self.car_x4 += self.speed_car4
-			if (self.car_x5 < self.game.DISPLAY_W - 120): self.car_x5 += self.speed_car5
-
 	def check_input(self):
 		self.game.check_input()
-		self.direction.normalize()
+
+
+class Car(MainGameScene):
+	def draw_car(self, n):
+		Car.pos_car(self, n)
+
+		pygame.draw.rect(self.game.window, self.game.GREEN, (self.Cars[n][0], self.Cars[n][1], self.width_car, self.height_car))
+
+
+	def speed_car(self):
+		self.speed_temp = [0.3, 0.35, 0.40, 0.45, 0.5]
+
+		shuffle(self.speed_temp)
+
+		self.speed = [self.speed_temp[0], self.speed_temp[1], self.speed_temp[2], self.speed_temp[3], self.speed_temp[4]]
+
+	def pos_car(self, n):
+		if (self.Cars[n][0] < self.finishLine):
+			self.Cars[n][0] += self.speed[n]
+			
+			if (self.Cars[0][0] >= self.finishLine and self.Cars[1][0] >= self.finishLine and self.Cars[2][0] >= self.finishLine and self.Cars[3][0] >= self.finishLine and self.Cars[4][0] >= self.finishLine):
+				self.Cars[0][0] = 0
+				self.Cars[1][0] = 0
+				self.Cars[2][0] = 0
+				self.Cars[3][0] = 0
+				self.Cars[4][0] = 0
