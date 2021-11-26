@@ -206,6 +206,9 @@ class MainGameScene(Scene):
 			self.game.display.fill(self.game.BLACK)
 			self.game.window.blit(self.game.display, (0, 0))
 
+			Background.move(self)
+			Background.draw(self)
+
 			Car.draw_car(self, 0)
 			Car.draw_car(self, 1)
 			Car.draw_car(self, 2)
@@ -227,11 +230,12 @@ class Car(MainGameScene):
 
 
 	def speed_car(self):
-		self.speed_temp = [0.3, 0.35, 0.40, 0.45, 0.5]
+		self.speed_temp = [3, 3.5, 4, 4.5, 5]
 
 		shuffle(self.speed_temp)
 
 		self.speed = [self.speed_temp[0], self.speed_temp[1], self.speed_temp[2], self.speed_temp[3], self.speed_temp[4]]
+
 
 	def pos_car(self, n):
 		if (self.Cars[n][0] < self.finishLine):
@@ -243,3 +247,41 @@ class Car(MainGameScene):
 				self.Cars[2][0] = 0
 				self.Cars[3][0] = 0
 				self.Cars[4][0] = 0
+
+
+class Background(MainGameScene):
+	pos_bg = 0
+	speed_bg = 0
+
+
+	def draw(self):
+		BG = pygame.image.load('Background.png')
+
+		BG = pygame.transform.scale(BG, (2560, 720))
+
+		self.game.window.blit(BG, (self.pos_bg, 0))
+	
+
+	def move(self):
+		self.pos_bg = Background.pos_bg
+		Background.pos_bg -= Background.speed_bg
+
+		if (self.Cars[0][0] >= self.finishLine or self.Cars[1][0] >= self.finishLine or self.Cars[2][0] >= self.finishLine or self.Cars[3][0] >= self.finishLine or self.Cars[4][0] >= self.finishLine):
+			self.temp = Background.speed_bg
+			Background.speed_bg = 0
+			
+		else:
+			Background.speed_bg = max(self.speed)
+
+		if (self.Cars[0][0] <= 10 and self.Cars[1][0] <= 10 and self.Cars[2][0] <= 10 and self.Cars[3][0] <= 10 and self.Cars[4][0] <= 10):
+			Background.pos_bg = 0
+			self.pos_bg = 0
+			
+			Car.speed_car(self)
+		
+		if (Background.speed_bg == 0):
+			self.speed[0] += self.temp
+			self.speed[1] += self.temp
+			self.speed[2] += self.temp
+			self.speed[3] += self.temp
+			self.speed[4] += self.temp
