@@ -2,6 +2,7 @@ import pygame
 from copy import copy
 from random import randint
 from Classes import Vector
+from random import shuffle
 
 
 class Scene:
@@ -180,3 +181,65 @@ class SnakeGameScene(Scene):
 			self.direction.x -= 1
 
 		self.direction.normalize()
+
+
+class MainGameScene(Scene):
+	def __init__(self, game, parent, title):
+		Scene.__init__(self, game, parent, title)
+
+		self.direction = Vector()
+
+		self.width_car = 100
+		self.height_car = 50
+		self.finishLine = self.game.DISPLAY_W - 150
+		self.Cars = [[0, self.game.DISPLAY_H / 6], [0, self.game.DISPLAY_H / 6 * 2], [0,self.game.DISPLAY_H / 6 * 3], [0, self.game.DISPLAY_H / 6 * 4], [0,  self.game.DISPLAY_H / 6 * 5]]
+
+
+	def draw_scene(self):
+		self.running = True
+
+		Car.speed_car(self)
+
+		while self.running:	
+			self.check_input()
+
+			self.game.display.fill(self.game.BLACK)
+			self.game.window.blit(self.game.display, (0, 0))
+
+			Car.draw_car(self, 0)
+			Car.draw_car(self, 1)
+			Car.draw_car(self, 2)
+			Car.draw_car(self, 3)
+			Car.draw_car(self, 4)
+
+			pygame.display.update()
+
+
+	def check_input(self):
+		self.game.check_input()
+
+
+class Car(MainGameScene):
+	def draw_car(self, n):
+		Car.pos_car(self, n)
+
+		pygame.draw.rect(self.game.window, self.game.GREEN, (self.Cars[n][0], self.Cars[n][1], self.width_car, self.height_car))
+
+
+	def speed_car(self):
+		self.speed_temp = [0.3, 0.35, 0.40, 0.45, 0.5]
+
+		shuffle(self.speed_temp)
+
+		self.speed = [self.speed_temp[0], self.speed_temp[1], self.speed_temp[2], self.speed_temp[3], self.speed_temp[4]]
+
+	def pos_car(self, n):
+		if (self.Cars[n][0] < self.finishLine):
+			self.Cars[n][0] += self.speed[n]
+			
+			if (self.Cars[0][0] >= self.finishLine and self.Cars[1][0] >= self.finishLine and self.Cars[2][0] >= self.finishLine and self.Cars[3][0] >= self.finishLine and self.Cars[4][0] >= self.finishLine):
+				self.Cars[0][0] = 0
+				self.Cars[1][0] = 0
+				self.Cars[2][0] = 0
+				self.Cars[3][0] = 0
+				self.Cars[4][0] = 0

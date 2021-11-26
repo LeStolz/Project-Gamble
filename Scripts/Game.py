@@ -23,6 +23,7 @@ class Game:
 			'Credits' 	 : MenuScene(self, 'Main Menu', 'Credits',	  ['Your mom', 'My mom', 'Our mom', 'Back']),
 			'Game Over'  : MenuScene(self, 'Main Menu', 'Game Over',  ['Main Game', 'Snake Game', 'Back']),
 			'Snake Game' : SnakeGameScene(self, 'Start Game', 'Snake Game'),
+			'Main Game'  : MainGameScene(self, 'Start Game', 'Main Game'),
 		}
 
 		self.current_scene = self.scenes['Main Menu']
