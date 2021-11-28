@@ -193,6 +193,7 @@ class MainGameScene(Scene):
 		self.height_car = 50
 		self.finishLine = self.game.DISPLAY_W - 150
 		self.Cars = [[0, self.game.DISPLAY_H / 6], [0, self.game.DISPLAY_H / 6 * 2], [0,self.game.DISPLAY_H / 6 * 3], [0, self.game.DISPLAY_H / 6 * 4], [0,  self.game.DISPLAY_H / 6 * 5]]
+		self.click = 0
 
 
 	def draw_scene(self):
@@ -202,6 +203,7 @@ class MainGameScene(Scene):
 
 		while self.running:	
 			self.check_input()
+			self.mode_speed()
 
 			self.game.display.fill(self.game.BLACK)
 			self.game.window.blit(self.game.display, (0, 0))
@@ -222,6 +224,27 @@ class MainGameScene(Scene):
 		self.game.check_input()
 
 
+	def mode_speed(self):
+		self.game.check_input()
+		if (self.game.K_m == True):
+			self.game.reset_input()
+			if (self.click == 0):
+				self.speed[0] *= 2
+				self.speed[1] *= 2
+				self.speed[2] *= 2
+				self.speed[3] *= 2
+				self.speed[4] *= 2
+			else:
+				self.speed[0] /= 2
+				self.speed[1] /= 2
+				self.speed[2] /= 2
+				self.speed[3] /= 2
+				self.speed[4] /= 2
+
+			if (self.click == 0): self.click = 1
+			else: self.click = 0
+
+
 class Car(MainGameScene):
 	def draw_car(self, n):
 		Car.pos_car(self, n)
@@ -238,15 +261,18 @@ class Car(MainGameScene):
 
 
 	def pos_car(self, n):
+		print(self.speed[0], self.click)
 		if (self.Cars[n][0] < self.finishLine):
 			self.Cars[n][0] += self.speed[n]
 			
-			if (self.Cars[0][0] >= self.finishLine and self.Cars[1][0] >= self.finishLine and self.Cars[2][0] >= self.finishLine and self.Cars[3][0] >= self.finishLine and self.Cars[4][0] >= self.finishLine):
-				self.Cars[0][0] = 0
-				self.Cars[1][0] = 0
-				self.Cars[2][0] = 0
-				self.Cars[3][0] = 0
-				self.Cars[4][0] = 0
+		if (self.Cars[0][0] >= self.finishLine and self.Cars[1][0] >= self.finishLine and self.Cars[2][0] >= self.finishLine and self.Cars[3][0] >= self.finishLine and self.Cars[4][0] >= self.finishLine):
+			self.Cars[0][0] = 0
+			self.Cars[1][0] = 0
+			self.Cars[2][0] = 0
+			self.Cars[3][0] = 0
+			self.Cars[4][0] = 0
+			Car.speed_car(self)
+			self.click = 0
 
 
 class Background(MainGameScene):
@@ -269,6 +295,7 @@ class Background(MainGameScene):
 		if (self.Cars[0][0] >= self.finishLine or self.Cars[1][0] >= self.finishLine or self.Cars[2][0] >= self.finishLine or self.Cars[3][0] >= self.finishLine or self.Cars[4][0] >= self.finishLine):
 			self.temp = Background.speed_bg
 			Background.speed_bg = 0
+
 			
 		else:
 			Background.speed_bg = max(self.speed)
@@ -277,7 +304,6 @@ class Background(MainGameScene):
 			Background.pos_bg = 0
 			self.pos_bg = 0
 			
-			Car.speed_car(self)
 		
 		if (Background.speed_bg == 0):
 			self.speed[0] += self.temp
