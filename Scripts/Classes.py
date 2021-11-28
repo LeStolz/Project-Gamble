@@ -1,5 +1,4 @@
 from math import sqrt
-from math import ceil
 
 
 class Vector:
@@ -17,9 +16,9 @@ class Vector:
 
 
 	def normalize(self):
-		if self.length() > 1:
-			self.x = ceil(self.x / self.length()) - (self.x < 0)
-			self.y = ceil(self.y / self.length()) - (self.y < 0)
+		if self.length() > 0:
+			self.x = round(self.x / self.length())
+			self.y = round(self.y / self.length())
 
 		return self
 

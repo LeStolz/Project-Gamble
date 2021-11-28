@@ -7,25 +7,32 @@ class Game:
 		pygame.init()
 
 		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT = False, False, False, False
-		self.DISPLAY_W, self.DISPLAY_H = 1280, 720
+		self.CAPTION = "Deadline Runners"
+		self.FPS = 60
 		self.BLACK, self.WHITE = (0, 0, 0), (255, 255, 255)
 		self.RED, self.GREEN, self.BLUE = (255, 0, 0), (0, 255, 0), (0, 0, 255)
 
+		self.DISPLAY_W, self.DISPLAY_H = 1280, 720
+
+		self.window = pygame.display.set_mode((self.DISPLAY_W, self.DISPLAY_H))
 		self.display = pygame.Surface((self.DISPLAY_W, self.DISPLAY_H))
-		self.window = pygame.display.set_mode((self.DISPLAY_W, self.DISPLAY_H), pygame.RESIZABLE)
+		self.clock = pygame.time.Clock()
+		self.dt = self.clock.tick(self.FPS)
 		self.font_name = pygame.font.get_default_font()
 		self.running = True
 
 		self.scenes = {
-			'Main Menu'	 : MenuScene(self, 'Main Menu', 'Main Menu',  ['Start Game', 'Options', 'Credits', 'Quit']),
+			'Main Menu' : MenuScene(self, 'Main Menu', 'Main Menu', ['Start Game', 'Settings', 'Credits', 'Quit']),
 			'Start Game' : MenuScene(self, 'Main Menu', 'Start Game', ['Main Game', 'Snake Game', 'Back']),
-			'Options' 	 : MenuScene(self, 'Main Menu', 'Options',    ['Resolutions', 'Volume', 'Graphics', 'Back']),
-			'Credits' 	 : MenuScene(self, 'Main Menu', 'Credits',	  ['Your mom', 'My mom', 'Our mom', 'Back']),
-			'Game Over'  : MenuScene(self, 'Main Menu', 'Game Over',  ['Main Game', 'Snake Game', 'Back']),
+			'Settings' : SettingsMenuScene(self, 'Main Menu', 'Settings', ['Resolution', 'Graphic', 'Volume', 'Back']),
+			'Credits' : MenuScene(self, 'Main Menu', 'Credits', ['Nam Dang', 'Minh Triet', 'Bao Khanh', 'Viet Hoang', 'Thanh Dat', 'Back']),
+			'Main Game' : SnakeGameScene(self, 'Start Game', 'Main Game'),
 			'Snake Game' : SnakeGameScene(self, 'Start Game', 'Snake Game'),
+			'Game Over' : MenuScene(self, 'Main Menu', 'Game Over', ['Main Game', 'Snake Game', 'Back']),
 		}
-
 		self.current_scene = self.scenes['Main Menu']
+
+		pygame.display.set_caption(self.CAPTION)
 
 
 	def check_input(self):
@@ -54,6 +61,19 @@ class Game:
 					self.K_LEFT = False
 
 
+	def set_window_size(self, w=-1, h=-1):
+		self.DISPLAY_W = self.DISPLAY_W if w == -1 else w
+		self.DISPLAY_H = self.DISPLAY_H if h == -1 else h
+
+		if (w == 0 and h == 0):
+			self.window = pygame.display.set_mode((self.DISPLAY_W, self.DISPLAY_H), pygame.FULLSCREEN)
+		else:
+			self.window = pygame.display.set_mode((self.DISPLAY_W, self.DISPLAY_H))
+
+		self.DISPLAY_W, self.DISPLAY_H = pygame.display.get_surface().get_size()
+		self.display = pygame.Surface((self.DISPLAY_W, self.DISPLAY_H))
+
+
 	def quit(self):
 		self.running = False
 		self.current_scene.running = False
@@ -63,7 +83,7 @@ class Game:
 		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT = False, False, False, False
 
 
-	def draw_text(self, text, size, x=-1, y=-1, color=-1):
+	def draw_text(self, text, size, x=-1, y=-1, color=-1, centerx=True, centery=True):
 		x = self.DISPLAY_W // 2 if x == -1 else x
 		y = self.DISPLAY_H // 2 if y == -1 else y
 		color = self.WHITE if color == -1 else color
@@ -71,7 +91,12 @@ class Game:
 		font = pygame.font.Font(self.font_name, size)
 		text_surface = font.render(text, True, color)
 
-		text_rect = text_surface.get_rect(center=(x, y))
+		text_rect = text_surface.get_rect(x=x, y=y)
+
+		if (centerx):
+			text_rect.centerx = x
+		if (centery):
+			text_rect.centery = y
 
 		self.display.blit(text_surface, text_rect)
 
@@ -89,3 +114,11 @@ class Game:
 		pygame.draw.rect(self.display, color, rect)
 
 		return rect
+
+
+game = Game()
+game.set_window_size(0, 0)
+
+
+while game.running:
+	game.current_scene.draw_scene()
