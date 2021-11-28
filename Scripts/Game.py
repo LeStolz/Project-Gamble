@@ -65,7 +65,7 @@ class Game:
 
 
 	def reset_input(self):
-		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT = False, False, False, False
+		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_m = False, False, False, False, False
 
 
 	def draw_text(self, text, size, x=-1, y=-1, color=-1):

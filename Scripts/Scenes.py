@@ -192,7 +192,7 @@ class MainGameScene(Scene):
 		self.width_car = 100
 		self.height_car = 50
 		self.finishLine = self.game.DISPLAY_W - 150
-		self.Cars = [[0, self.game.DISPLAY_H / 6], [0, self.game.DISPLAY_H / 6 * 2], [0,self.game.DISPLAY_H / 6 * 3], [0, self.game.DISPLAY_H / 6 * 4], [0,  self.game.DISPLAY_H / 6 * 5]]
+		self.Cars = [[0, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]
 		self.click = 0
 
 
@@ -211,11 +211,7 @@ class MainGameScene(Scene):
 			Background.move(self)
 			Background.draw(self)
 
-			Car.draw_car(self, 0)
-			Car.draw_car(self, 1)
-			Car.draw_car(self, 2)
-			Car.draw_car(self, 3)
-			Car.draw_car(self, 4)
+			[Car.draw_car(self, x) for x in range (5)]
 
 			pygame.display.update()
 
@@ -226,23 +222,21 @@ class MainGameScene(Scene):
 
 	def mode_speed(self):
 		self.game.check_input()
+
 		if (self.game.K_m == True):
 			self.game.reset_input()
-			if (self.click == 0):
-				self.speed[0] *= 2
-				self.speed[1] *= 2
-				self.speed[2] *= 2
-				self.speed[3] *= 2
-				self.speed[4] *= 2
-			else:
-				self.speed[0] /= 2
-				self.speed[1] /= 2
-				self.speed[2] /= 2
-				self.speed[3] /= 2
-				self.speed[4] /= 2
 
-			if (self.click == 0): self.click = 1
-			else: self.click = 0
+			if (self.click == 0):
+				for x in range (5):
+					self.speed[x] *= 2
+			else:
+				for x in range (5):
+					self.speed[x] /= 2
+
+			if (self.click == 0):
+				self.click = 1
+			else:
+				self.click = 0
 
 
 class Car(MainGameScene):
@@ -257,21 +251,19 @@ class Car(MainGameScene):
 
 		shuffle(self.speed_temp)
 
-		self.speed = [self.speed_temp[0], self.speed_temp[1], self.speed_temp[2], self.speed_temp[3], self.speed_temp[4]]
+		self.speed = self.speed_temp[:]
 
 
 	def pos_car(self, n):
-		print(self.speed[0], self.click)
 		if (self.Cars[n][0] < self.finishLine):
 			self.Cars[n][0] += self.speed[n]
 			
 		if (self.Cars[0][0] >= self.finishLine and self.Cars[1][0] >= self.finishLine and self.Cars[2][0] >= self.finishLine and self.Cars[3][0] >= self.finishLine and self.Cars[4][0] >= self.finishLine):
-			self.Cars[0][0] = 0
-			self.Cars[1][0] = 0
-			self.Cars[2][0] = 0
-			self.Cars[3][0] = 0
-			self.Cars[4][0] = 0
+			for x in range (5):
+				self.Cars[x][0] = 0
+
 			Car.speed_car(self)
+
 			self.click = 0
 
 
@@ -306,8 +298,5 @@ class Background(MainGameScene):
 			
 		
 		if (Background.speed_bg == 0):
-			self.speed[0] += self.temp
-			self.speed[1] += self.temp
-			self.speed[2] += self.temp
-			self.speed[3] += self.temp
-			self.speed[4] += self.temp
+			for x in range(5):
+				self.speed[x] += self.temp
