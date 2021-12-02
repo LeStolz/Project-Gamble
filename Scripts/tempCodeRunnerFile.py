@@ -1,1 +1,1 @@
-speed_car()
+self.Cars = [[0, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]

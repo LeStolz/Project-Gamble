@@ -1,6 +1,9 @@
+from math import e
 import pygame
 from copy import copy
 from random import randint
+
+from pygame.transform import average_color
 from Classes import Vector
 from random import shuffle
 
@@ -194,13 +197,16 @@ class MainGameScene(Scene):
 		self.finishLine = self.game.DISPLAY_W - 150
 		self.Cars = [[0, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]
 		self.click = 0
-
+		self.speed = [0, 0, 0, 0, 0]
+	
 
 	def draw_scene(self):
 		self.running = True
+		self.speed = Car.speed_car(self)
 
-		Car.speed_car(self)
-
+		Ob = Obstacle(self.game, self.parent, self.title, self.Cars, self.speed)
+		Ob.range_Obstacle()
+		
 		while self.running:	
 			self.check_input()
 			self.mode_speed()
@@ -212,6 +218,8 @@ class MainGameScene(Scene):
 			Background.draw(self)
 
 			[Car.draw_car(self, x) for x in range (5)]
+
+			Ob.draw_Obstacle()
 
 			pygame.display.update()
 
@@ -244,7 +252,7 @@ class Car(MainGameScene):
 		Car.pos_car(self, n)
 
 		pygame.draw.rect(self.game.window, self.game.GREEN, (self.Cars[n][0], self.Cars[n][1], self.width_car, self.height_car))
-
+		
 
 	def speed_car(self):
 		self.speed_temp = [3, 3.5, 4, 4.5, 5]
@@ -252,6 +260,8 @@ class Car(MainGameScene):
 		shuffle(self.speed_temp)
 
 		self.speed = self.speed_temp[:]
+
+		return self.speed
 
 
 	def pos_car(self, n):
@@ -261,6 +271,7 @@ class Car(MainGameScene):
 		if (self.Cars[0][0] >= self.finishLine and self.Cars[1][0] >= self.finishLine and self.Cars[2][0] >= self.finishLine and self.Cars[3][0] >= self.finishLine and self.Cars[4][0] >= self.finishLine):
 			for x in range (5):
 				self.Cars[x][0] = 0
+				self.running = False
 
 			Car.speed_car(self)
 
@@ -300,3 +311,103 @@ class Background(MainGameScene):
 		if (Background.speed_bg == 0):
 			for x in range(5):
 				self.speed[x] += self.temp
+
+
+class Obstacle(MainGameScene):
+	def __init__(self, game, parent, title, Cars, speed):
+		super().__init__(game, parent, title)
+		self.Cars = Cars
+		self.speed = speed
+
+		self.Ob = [[self.game.DISPLAY_W, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]
+		self.rand = [0, 0]
+		self.start = [1, 1]
+		self.width_Obstacle = 50
+		self.height_Obstacle = 50
+		self.flag = [1, 1]
+		self.count = [0, 0]
+
+
+	def range_Obstacle(self):
+		self.speed_temp = self.speed[self.rand[0]]
+
+		self.rand_temp = [0, 1, 2, 3, 4]
+		shuffle(self.rand_temp)
+		if (self.flag[0]):
+			self.rand[0] = self.rand_temp[0]
+			self.Ob[self.rand[0]][0] += 200
+		if (self.flag[1]):
+			self.rand[1] =  self.rand_temp[1]
+		
+
+	def draw_Obstacle(self):
+		if (self.count[0] == 2):
+			self.start[0] = 0
+		if (self.count[1] == 2):
+			self.start[1] = 0
+
+		if (self.start[0] == 1):
+			Obstacle.speed(self)
+			Obstacle.move(self)
+			Obstacle.check(self)
+
+			pygame.draw.rect(self.game.window, self.game.RED, (self.Ob[self.rand[0]][0], self.Ob[self.rand[0]][1], self.width_Obstacle, self.height_Obstacle))
+
+		if (self.start[1] == 1):
+			Obstacle.speed(self)
+			Obstacle.move(self)
+			Obstacle.check(self)
+
+			pygame.draw.rect(self.game.window, self.game.RED, (self.Ob[self.rand[1]][0], self.Ob[self.rand[1]][1], self.width_Obstacle, self.height_Obstacle))
+	
+
+	def speed(self):
+		self.speed_Ob = 7
+
+
+	def move(self):
+		if (self.start[0] == 1):
+			self.Ob[self.rand[0]][0] -= self.speed_Ob
+
+			if (self.Ob[self.rand[0]][0] < 0):
+				self.Ob[self.rand[0]][0] = self.game.DISPLAY_W
+				self.flag[1] = 0
+				self.flag[0] = 1
+				self.count[0] += 1
+				self.range_Obstacle()
+
+		if (self.start[1] == 1):		
+			self.Ob[self.rand[1]][0] -= self.speed_Ob
+
+			if (self.Ob[self.rand[1]][0] < 0):
+				self.Ob[self.rand[1]][0] = self.game.DISPLAY_W
+				self.flag[0] = 0
+				self.flag[1] = 1
+				self.count[1] += 1
+				self.range_Obstacle()			
+
+
+	def check(self):
+		if (self.start[0] == 1):
+			if ((self.Ob[self.rand[0]][0] - (self.Cars[self.rand[0]][0] + self.width_car)) <=  20 and (self.Ob[self.rand[0]][0] - (self.Cars[self.rand[0]][0] + self.width_car)) >= -100):
+				self.speed[self.rand[0]] = -3
+			else:
+				self.speed[self.rand[0]] = self.speed_temp
+
+			if (self.Cars[0][0] >= self.finishLine or self.Cars[1][0] >= self.finishLine or self.Cars[2][0] >= self.finishLine or self.Cars[3][0] >= self.finishLine or self.Cars[4][0] >= self.finishLine):
+				self.start[0] = 0
+
+		if (self.start[1] == 1):
+			if ((self.Ob[self.rand[1]][0] - (self.Cars[self.rand[1]][0] + self.width_car)) <=  20 and (self.Ob[self.rand[1]][0] - (self.Cars[self.rand[1]][0] + self.width_car)) >= -100):
+				self.speed[self.rand[1]] = -3
+			else:
+				self.speed[self.rand[1]] = self.speed_temp
+
+			if (self.Cars[0][0] >= self.finishLine or self.Cars[1][0] >= self.finishLine or self.Cars[2][0] >= self.finishLine or self.Cars[3][0] >= self.finishLine or self.Cars[4][0] >= self.finishLine):
+				self.start[1] = 0
+		
+			 
+
+
+
+		
