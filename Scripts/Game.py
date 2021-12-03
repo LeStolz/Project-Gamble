@@ -12,7 +12,7 @@ class Game:
 		self.CAPTION = "Deadline Runners"
 		self.FPS = 60
 		self.BLACK, self.WHITE = (0, 0, 0), (255, 255, 255)
-		self.RED, self.GREEN, self.BLUE = (255, 0, 0), (0, 255, 0), (0, 0, 255)
+		self.RED, self.GREEN, self.BLUE = (244, 81, 30), (67, 160, 71), (3, 155, 229)
 
 		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_KP_ENTER, self.K_SPACE, self.K_ESCAPE, self.M_UP, self.M_DOWN \
 			= False, False, False, False, False, False, False, False, False
@@ -37,15 +37,16 @@ class Game:
 		pygame.display.set_caption(self.CAPTION)
 
 
-	def import_assets(self, directory, assets, listed=False):
+	def import_assets(self, directory):
+		assets = {}
+
 		for file in os.listdir(self.DIRECTORY + directory):
 			name, extension = os.path.splitext(file)
 
 			if '.png' in extension:
-				if listed:
-					assets[name] = [Surface(pygame.image.load(self.DIRECTORY + directory + file))]
-				else:
-					assets[name] = Surface(pygame.image.load(self.DIRECTORY + directory + file))
+				assets[name] = Surface(pygame.image.load(self.DIRECTORY + directory + file))
+
+		return assets
 
 
 	def check_input(self):
@@ -156,6 +157,12 @@ class Game:
 
 	def draw_surface(self, surface):
 		self.display.blit(surface.image, surface.rect)
+
+
+	def draw_button(self, button):
+		self.draw_surface(button.bottom)
+		self.draw_surface(button.top)
+		self.draw_text(button.text, 20, self.WHITE, button.top.rect.centerx, button.top.rect.centery)
 
 
 game = Game()

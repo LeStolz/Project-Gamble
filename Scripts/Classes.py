@@ -63,3 +63,45 @@ class Surface:
 		self.rect.h = h
 
 		self.image = pygame.transform.scale(self.image, (self.rect.w, self.rect.h))
+
+
+class Button:
+	def __init__(self, bottom, top, text=''):
+		self.bottom = bottom
+		self.top = top
+		self.text = text
+
+		self.top_normal_y = self.top.rect.y
+
+
+	def position(self, x, y):
+		self.bottom.position(x, y)
+		self.top.position(x, y)
+
+		self.top_normal_y = self.top.rect.y
+
+
+	def rotate(self, r):
+		self.bottom.rotate(r)
+		self.top.rotate(r)
+
+
+	def resize(self, w, h):
+		self.bottom.resize(w, h)
+		self.top.resize(w, h)
+
+
+	def normal(self):
+		self.top.rect.y = self.top_normal_y
+
+
+	def hover(self):
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.04
+
+
+	def up(self):
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.1
+
+
+	def down(self):
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.14
