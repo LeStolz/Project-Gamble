@@ -6,7 +6,7 @@ class Game:
 	def __init__(self):
 		pygame.init()
 
-		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT = False, False, False, False
+		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_SPACE = False, False, False, False, False
 		self.DISPLAY_W, self.DISPLAY_H = 1280, 720
 		self.BLACK, self.WHITE = (0, 0, 0), (255, 255, 255)
 		self.RED, self.GREEN, self.BLUE = (255, 0, 0), (0, 255, 0), (0, 0, 255)
@@ -43,6 +43,8 @@ class Game:
 					self.K_RIGHT = True
 				if event.key == pygame.K_LEFT or event.key == pygame.K_a:
 					self.K_LEFT = True
+				if event.key == pygame.K_SPACE:
+					self.K_SPACE = True
 
 			if event.type == pygame.KEYUP:
 				if event.key == pygame.K_UP or event.key == pygame.K_w:
@@ -53,6 +55,8 @@ class Game:
 					self.K_RIGHT = False
 				if event.key == pygame.K_LEFT or event.key == pygame.K_a:
 					self.K_LEFT = False
+				if event.key == pygame.K_SPACE:
+					self.K_SPACE = False
 
 
 	def quit(self):
@@ -61,7 +65,7 @@ class Game:
 
 
 	def reset_input(self):
-		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT = False, False, False, False
+		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_SPACE = False, False, False, False, False
 
 
 	def draw_text(self, text, size, x=-1, y=-1, color=-1):
