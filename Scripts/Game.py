@@ -7,22 +7,27 @@ from Classes import *
 class Game:
 	def __init__(self):
 		pygame.init()
+		pygame.display.set_caption('Deadline Runners')
 
 		self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-		self.CAPTION = "Deadline Runners"
 		self.FPS = 60
-		self.BLACK, self.WHITE = (0, 0, 0), (255, 255, 255)
-		self.RED, self.GREEN, self.BLUE = (244, 81, 30), (67, 160, 71), (3, 155, 229)
+		self.BLACK, self.WHITE, self.RED, self.GREEN, self.BLUE = \
+			(0, 0, 0), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
 
 		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_KP_ENTER, self.K_SPACE, self.K_ESCAPE, self.M_UP, self.M_DOWN \
 			= False, False, False, False, False, False, False, False, False
-		self.W, self.H = 1280, 720
 
-		self.window = pygame.display.set_mode((self.W, self.H))
+		self.W, self.H = 1280, 720
+		self.RESOLUTION, self.GRAPHIC, self.SOUND = 1, 1, 1
+
+		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN)
 		self.display = pygame.Surface((self.W, self.H))
-		self.clock = pygame.time.Clock()
 		self.font_name = self.DIRECTORY + '\\Assets\\Sprites\\Font.ttf'
+		self.clock = pygame.time.Clock()
 		self.running = True
+
+		self.buttons_assets = {}
+		self.import_assets()
 
 		self.scenes = {
 			'Openings' : OpeningsScene(self, 'Openings'),
@@ -34,19 +39,13 @@ class Game:
 		}
 		self.current_scene = self.scenes['Openings']
 
-		pygame.display.set_caption(self.CAPTION)
 
-
-	def import_assets(self, directory):
-		assets = {}
-
-		for file in os.listdir(self.DIRECTORY + directory):
+	def import_assets(self):
+		for file in os.listdir(self.DIRECTORY + '\\Assets\\Sprites\\Buttons\\'):
 			name, extension = os.path.splitext(file)
 
 			if '.png' in extension:
-				assets[name] = Surface(pygame.image.load(self.DIRECTORY + directory + file))
-
-		return assets
+				self.buttons_assets[name] = Surface(pygame.image.load(self.DIRECTORY + '\\Assets\\Sprites\\Buttons\\' + file))
 
 
 	def check_input(self):
@@ -95,6 +94,9 @@ class Game:
 				self.M_UP = False
 				self.M_DOWN = True
 
+			if event.type == pygame.VIDEORESIZE:
+				self.set_window_size()
+
 
 	def reset_input(self):
 		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_KP_ENTER, self.K_SPACE, self.K_ESCAPE, self.M_UP, self.M_DOWN \
@@ -115,17 +117,22 @@ class Game:
 		self.current_scene = self.scenes[new_scene]
 
 
-	def set_window_size(self, w, h):
-		if (w == 0 and h == 0):
+	def set_window_size(self):
+		self.W, self.H = self.window.get_size()
+		if self.RESOLUTION:
 			self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN)
 		else:
-			self.window = pygame.display.set_mode((w, h))
-
+			self.window = pygame.display.set_mode((self.W, self.H), pygame.RESIZABLE)
 		self.W, self.H = self.window.get_size()
+
 		self.display = pygame.Surface((self.W, self.H))
 
+		self.import_assets()
+		for i, v in self.scenes.items():
+			v.__init__(self, i)
 
-	def draw_text(self, text, text_size, text_color, x, y, centerx=True, centery=True):
+
+	def draw_text(self, text, text_size, text_color, x, y, centerx=True, centery=True, right=False):
 		font = pygame.font.Font(self.font_name, text_size)
 		text_surface = font.render(text, False, text_color)
 
@@ -135,20 +142,24 @@ class Game:
 			text_rect.centerx = x
 		if (centery):
 			text_rect.centery = y
+		if (right):
+			text_rect.right = x
 
 		self.display.blit(text_surface, text_rect)
 
 		return text_rect
 
 
-	def draw_rect(self, x, y, w, h, rect_color, centerx=True, centery=True, rect=-1):
+	def draw_rect(self, x=-1, y=-1, w=-1, h=-1, rect_color=-1, centerx=True, centery=True, right=False, rect=-1):
 		if rect == -1:
 			rect = pygame.Rect(x, y, w, h)
 
-		if (centerx):
-			rect.centerx = x
-		if (centery):
-			rect.centery = y
+			if (centerx):
+				rect.centerx = x
+			if (centery):
+				rect.centery = y
+			if (right):
+				text_rect.right = x
 
 		pygame.draw.rect(self.display, rect_color, rect)
 
@@ -162,11 +173,12 @@ class Game:
 	def draw_button(self, button):
 		self.draw_surface(button.bottom)
 		self.draw_surface(button.top)
-		self.draw_text(button.text, 20, self.WHITE, button.top.rect.centerx, button.top.rect.centery)
+		self.draw_text(
+			button.text, 40, self.WHITE, button.top.rect.centerx + button.top.rect.h * 0.025, button.top.rect.centery - button.top.rect.h * 0.075
+		)
 
 
 game = Game()
-game.set_window_size(game.W, game.H)
 
 
 while game.running:

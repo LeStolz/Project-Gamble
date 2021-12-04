@@ -100,8 +100,8 @@ class Button:
 
 
 	def up(self):
-		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.1
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.08
 
 
 	def down(self):
-		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.14
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.11
