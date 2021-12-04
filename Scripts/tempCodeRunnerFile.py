@@ -1,1 +1,1 @@
-self.Cars = [[0, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]
+r'C:\\D\\Source_Code_FIT\\Project-Gamble\\Scripts\\Background.png'
