@@ -17,10 +17,12 @@ class Game:
 		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_KP_ENTER, self.K_SPACE, self.K_ESCAPE, self.M_UP, self.M_DOWN \
 			= False, False, False, False, False, False, False, False, False
 
-		self.W, self.H = 1280, 720
+		self.FULLSCREEN_W, self.FULLSCREEN_H = pygame.display.Info().current_w, pygame.display.Info().current_h
+		self.WINSCREEN_W, self.WINSCREEN_H = 1280, 720
+		self.W, self.H = self.FULLSCREEN_W, self.FULLSCREEN_H
 		self.RESOLUTION, self.GRAPHIC, self.SOUND = 1, 1, 1
 
-		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN)
+		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
 		self.display = pygame.Surface((self.W, self.H))
 		self.font_name = self.DIRECTORY + '\\Assets\\Sprites\\Font.ttf'
 		self.clock = pygame.time.Clock()
@@ -118,12 +120,15 @@ class Game:
 
 
 	def set_window_size(self):
-		self.W, self.H = self.window.get_size()
 		if self.RESOLUTION:
-			self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN)
+			self.W, self.H = self.FULLSCREEN_W, self.FULLSCREEN_H
+			self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
 		else:
+			if self.W == self.FULLSCREEN_W and self.H == self.FULLSCREEN_H:
+				self.W, self.H = self.WINSCREEN_W, self.WINSCREEN_H
+			else:
+				self.W, self.H = self.window.get_size()
 			self.window = pygame.display.set_mode((self.W, self.H), pygame.RESIZABLE)
-		self.W, self.H = self.window.get_size()
 
 		self.display = pygame.Surface((self.W, self.H))
 
