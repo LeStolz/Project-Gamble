@@ -1,4 +1,5 @@
 import pygame
+import random
 from Classes import *
 
 
@@ -13,14 +14,14 @@ class MenuScene(Scene):
 	def __init__(self, game, title):
 		Scene.__init__(self, game, title)
 
-		self.assets = self.game.buttons_assets
+		self.buttons_assets = self.game.buttons_assets
 
 		self.menu_buttons = {
-			'Settings' : Button(Surface(self.assets['Bottom'].image), self.assets['Settings']),
-			'MiniGame' : Button(Surface(self.assets['Bottom'].image), self.assets['MiniGame']),
-			'MainGame' : Button(Surface(self.assets['Bottom'].image), self.assets['MainGame']),
-			'Purchase' : Button(Surface(self.assets['Bottom'].image), self.assets['Purchase']),
-			'Accounts' : Button(Surface(self.assets['Bottom'].image), self.assets['Accounts']),
+			'Settings' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Settings']),
+			'Minigame' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Minigame']),
+			'Deadline Runners' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['DeadlineRunners']),
+			'Shop' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Shop']),
+			'Accounts' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Accounts']),
 		}
 		self.buttons = {}
 
@@ -128,7 +129,7 @@ class MenuScene(Scene):
 			self.game.game_loop()
 
 
-class OpeningsScene(MenuScene):
+class Openingcene(MenuScene):
 	def __init__(self, game, title):
 		MenuScene.__init__(self, game, title)
 
@@ -145,7 +146,7 @@ class OpeningsScene(MenuScene):
 		self.game.draw_text('Click to continue', 35, self.text_color, self.game.W // 2, self.game.H * 3 // 4, centery=False)
 
 		if self.game.M_DOWN:
-			self.game.switch_scene('Openings', 'MainGame')
+			self.game.switch_scene('Opening', 'Deadline Runners')
 
 
 class SettingsScene(MenuScene):
@@ -166,8 +167,8 @@ class SettingsScene(MenuScene):
 
 		count = 0
 		for i, v in self.options.items():
-			self.buttons[i + 'Left'] = Button(Surface(self.assets['ArrowBottom'].image), Surface(self.assets['ArrowLeft'].image))
-			self.buttons[i + 'Right'] = Button(Surface(self.assets['ArrowBottom'].image), Surface(self.assets['ArrowRight'].image))
+			self.buttons[i + 'Left'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+			self.buttons[i + 'Right'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
 
 			self.buttons[i + 'Left'].position(self.game.W * 4 // 5 - 340, self.game.H // 3 + 100 * (count - 1) - 40)
 			self.buttons[i + 'Right'].position(self.game.W * 4 // 5, self.game.H // 3 + 100 * (count - 1) - 40)
@@ -202,35 +203,79 @@ class SettingsScene(MenuScene):
 		for i, v in self.options.items():
 			self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 5, self.game.H // 3 + 100 * (count - 1), centerx=False)
 			self.game.draw_text(self.qualities[i][v], 35, self.game.WHITE, self.game.W * 4 // 5 - 123, self.game.H // 3 + 100 * (count - 1))
-
-			self.game.draw_button(self.buttons[i + 'Left'])
-			self.game.draw_button(self.buttons[i + 'Right'])
 			count += 1
 
 
-class MiniGameScene(MenuScene):
+class MinigameScene(MenuScene):
 	def __init__(self, game, title):
 		MenuScene.__init__(self, game, title)
+
+		self.thumbnails_assets = self.game.thumbnails_assets
+
+		self.buttons = {
+			'Egg Collector' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image)),
+			'Space Invader' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image)),
+		}
+
+		self.thumbnails = {
+			'Egg Collector' : Surface(self.thumbnails_assets['EggCollector'].image),
+			'Space Invader' : Surface(self.thumbnails_assets['SpaceInvader'].image),
+		}
+
+		self.buttons['Egg Collector'].position(self.game.W // 8 + 160, self.game.H // 6 + 415)
+		self.buttons['Space Invader'].position(self.game.W * 7 // 8 - 400 + 160, self.game.H // 6 + 415)
+
+		self.thumbnails['Egg Collector'].resize(400, 400)
+		self.thumbnails['Space Invader'].resize(400, 400)
+
+		self.thumbnails['Egg Collector'].position(self.game.W // 8, self.game.H // 6)
+		self.thumbnails['Space Invader'].position(self.game.W * 7 // 8 - 400, self.game.H // 6)
+
+
+	def check_button_input(self):
+		if (self.down_button_name in self.buttons.keys() and self.game.M_DOWN):
+			self.game.switch_scene(self.title, self.down_button_name)
 
 
 	def draw_options(self):
 		self.draw_menu_buttons()
+		self.draw_buttons()
+
+		self.game.draw_surface(self.thumbnails['Egg Collector'])
+		self.game.draw_surface(self.thumbnails['Space Invader'])
 
 		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
+		self.game.draw_text('Egg Collector', 35, self.game.WHITE, self.game.W // 8 + 200, self.game.H // 6 - 45, centery=False)
+		self.game.draw_text('Space Invader', 35, self.game.WHITE, self.game.W * 7 // 8 - 400 + 200, self.game.H // 6 - 45, centery=False)
 
-class MainGameScene(MenuScene):
+
+class DeadlineRunnersScene(MenuScene):
 	def __init__(self, game, title):
 		MenuScene.__init__(self, game, title)
+
+		self.thumbnails_assets = self.game.thumbnails_assets
+
+		self.buttons = {
+			'Deadline Runners Game' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image)),
+		}
+
+		self.buttons['Deadline Runners Game'].position(self.game.W * 7 // 8 - 400 + 160, self.game.H // 6 + 415)
+
+
+	def check_button_input(self):
+		if (self.down_button_name in self.buttons.keys() and self.game.M_DOWN):
+			self.game.switch_scene(self.title, self.down_button_name)
 
 
 	def draw_options(self):
 		self.draw_menu_buttons()
+		self.draw_buttons()
 
 		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
 
-class PurchaseScene(MenuScene):
+class ShopScene(MenuScene):
 	def __init__(self, game, title):
 		MenuScene.__init__(self, game, title)
 

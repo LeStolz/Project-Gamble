@@ -2,6 +2,9 @@ import pygame
 import os
 from Scenes import *
 from Classes import *
+from EggCollector import *
+from SpaceInvader import *
+from DeadlineRunners import *
 
 
 class Game:
@@ -29,25 +32,40 @@ class Game:
 		self.running = True
 
 		self.buttons_assets = {}
+		self.thumbnails_assets = {}
+		self.egg_collector_assets = {}
 		self.import_assets()
 
 		self.scenes = {
-			'Openings' : OpeningsScene(self, 'Openings'),
+			'Opening' : Openingcene(self, 'Opening'),
 			'Settings' : SettingsScene(self, 'Settings'),
-			'MiniGame' : MiniGameScene(self, 'MiniGame'),
-			'MainGame' : MainGameScene(self, 'MainGame'),
-			'Purchase' : PurchaseScene(self, 'Purchase'),
+			'Minigame' : MinigameScene(self, 'Minigame'),
+			'Deadline Runners' : DeadlineRunnersScene(self, 'Deadline Runners'),
+			'Deadline Runners Game' : DeadlineRunnersGameScene(self, 'Deadline Runners Game'),
+			'Shop' : ShopScene(self, 'Shop'),
 			'Accounts' : AccountsScene(self, 'Accounts'),
+			'Egg Collector' : EggCollectorScene(self, 'Egg Collector'),
+			'Space Invader' : SpaceInvaderScene(self, 'Space Invader'),
 		}
-		self.current_scene = self.scenes['Openings']
+		self.current_scene = self.scenes['Opening']
 
 
-	def import_assets(self):
-		for file in os.listdir(self.DIRECTORY + '\\Assets\\Sprites\\Buttons\\'):
+	def import_assets_from_directory(self, directory):
+		assets = {}
+
+		for file in os.listdir(self.DIRECTORY + directory):
 			name, extension = os.path.splitext(file)
 
 			if '.png' in extension:
-				self.buttons_assets[name] = Surface(pygame.image.load(self.DIRECTORY + '\\Assets\\Sprites\\Buttons\\' + file))
+				assets[name] = Surface(pygame.image.load(self.DIRECTORY + directory + file))
+
+		return assets
+
+
+	def import_assets(self):
+		self.buttons_assets = self.import_assets_from_directory('\\Assets\\Sprites\\Buttons\\')
+		self.thumbnails_assets = self.import_assets_from_directory('\\Assets\\Sprites\\Thumbnails\\')
+		self.egg_collector_assets = self.import_assets_from_directory('\\Assets\\Sprites\\EggCollector\\')
 
 
 	def check_input(self):
