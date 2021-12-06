@@ -1,11 +1,8 @@
-from math import e
-from os import X_OK, supports_effective_ids
-from warnings import catch_warnings
 import pygame
 from copy import copy
 from random import randint
+from pygame.constants import BIG_ENDIAN
 
-from pygame.transform import average_color
 from Classes import Vector
 from random import shuffle
 
@@ -187,292 +184,192 @@ class SnakeGameScene(Scene):
 
 		self.direction.normalize()
 
+# ================================================================================================================
 
 class MainGameScene(Scene):
 	def __init__(self, game, parent, title):
 		Scene.__init__(self, game, parent, title)
-
-		self.direction = Vector()
-
-		self.width_car = 100
-		self.height_car = 50
-		self.finish_line = self.game.DISPLAY_W - 150
-		self.cars = [[0, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]
-		self.click = 0
-	
+		self.width_window, self.height_window = pygame.display.get_surface().get_size()
+		self.finish_line = self.width_window - 150
 
 	def draw_scene(self):
 		self.running = True
-
-		self.speed = Car.speed_car(self)
-
-		ob = Obstacle(self.game, self.parent, self.title, self.cars, self.speed)
-		ob.range_Obstacle()
-
-		bg = Background(self.game, self.parent, self.title, self.speed, self.cars)
-		po = Point(self.game, self.parent, self.title, self.cars, self.speed)
-		po.range_point()
 		
-		
-		while self.running:	
+		self.Car = Car(self.game, self.parent, self.title)
+		self.speed_cars = self.Car.speed_car()
+
+		self.Background = Background(self.game, self.parent, self.title, self.speed_cars, self.Car.cars)
+		self.Obstacle = Obstacle(self.game, self.parent, self.title, self.speed_cars, self.Car.cars)
+		self.Obstacle.range_ob()
+		self.Point = Point(self.game, self.parent, self.title, self.speed_cars, self.Car.cars)
+		self.Point.range_po()
+		while self.running:
 			self.check_input()
-			self.mode_speed()
 
 			self.game.display.fill(self.game.BLACK)
 			self.game.window.blit(self.game.display, (0, 0))
 
-			bg.move()
-			bg.draw()
+			self.width_window, self.height_window = pygame.display.get_surface().get_size()
+			
+			self.Background.draw_bg()
 
-			for x in range (5):
-				Car.draw_car(self, x)
+			for n in range (5):
+				self.Car.draw_car(n)
 
-			ob.draw_Obstacle()
-			po.draw_point()
+			self.Point.draw_po()
+			self.Obstacle.draw_ob()
+			
 
 			pygame.display.update()
-
+	
 
 	def check_input(self):
 		self.game.check_input()
 
-
-	def mode_speed(self):
-		self.game.check_input()
-
-		if self.game.K_SPACE:
-			self.game.reset_input()
-
-			if self.click == 0:
-				for x in range (5):
-					self.speed[x] *= 2
-			else:
-				for x in range (5):
-					self.speed[x] /= 2
-
-			self.click = (self.click + 1) % 2
-
-
 class Car(MainGameScene):
+	def __init__(self, game, parent, title):
+		super().__init__(game, parent, title)
+		self.width_car = 100
+		self.height_car = 50
+		self.cars = [[0, self.height_window / 6 * x] for x in range(1,6)]
+		
+	
 	def draw_car(self, n):
 		Car.pos_car(self, n)
-
-		bg = Background(self.game, self.parent, self.title, self.speed, self.cars)
-
-		pygame.draw.rect(self.game.window, self.game.GREEN, (self.cars[n][0] + bg.move(), self.cars[n][1], self.width_car, self.height_car))
+		print(self.speed_cars)
+		pygame.draw.rect(self.game.window, self.game.GREEN, (self.cars[n][0], self.cars[n][1], self.width_car, self.height_car))
 
 
 	def speed_car(self):
-		self.speed_temp = [7, 7.5, 8, 9, 10]
+		self.speed_temp = [0.2, 0.25, 0.3, 0.25, 0.2]
 
 		shuffle(self.speed_temp)
 
-		self.speed = self.speed_temp[:]
+		self.speed_cars = self.speed_temp[:]
 
-		return self.speed
+		return self.speed_cars
 
 
-	def pos_car(self, n):
-		if self.cars[n][0] < 2000 - self.width_car - 50:
-			self.cars[n][0] += self.speed[n]
-
-		flag = 0
-		for i in range (5):
-			if self.cars[i][0] >= 2000 - self.width_car -50:
-				flag += 1
-			if flag == 5:
-				for x in range (5):
-					self.cars[x][0] = 0
-					self.running = False
-
-					Car.speed_car(self)
-
-					self.click = 0
-
+	def pos_car(self, n):		
+		if self.cars[n][0] <= self.finish_line:
+			self.cars[n][0] += self.speed_cars[n]
 
 class Background(MainGameScene):
-	def __init__(self, game, parent, title, speed, cars):
+	def __init__(self, game, parent, title,speed_cars, cars):
 		super().__init__(game, parent, title)
-		self.speed = speed
+		self.speed_cars =speed_cars
+		self.speed_cars_remove = self.speed_cars[:]
+		self.speed_cars_temp = [self.speed_cars[i] + 2 for i in range (5)]
 		self.cars = cars
-
-		self.pos_bg = 0
-		self.speed_bg = 0
 		self.BG = pygame.image.load(r'C:\\D\\Source_Code_FIT\\Project-Gamble\\Scripts\\Background.png')
-		self.BG = pygame.transform.scale(self.BG, (2000, 720))
+		self.BG = pygame.transform.scale(self.BG, (10000, 720))
 		self.width_bg = self.BG.get_width()
-		self.temp = 0
-		self.car = Car(self.game, self.parent, self.title)
-		self.temp_pos_bg = 0
-		
-	
+		self.pos_bg = 0
 
-	def draw(self):
-		self.game.window.blit(self.BG, (self.temp_pos_bg, 0))
-	
+	def draw_bg (self):
+		self.move_bg()
+		self.game.window.blit(self.BG, (self.pos_bg, 0))
 
-	def move(self):
-		temp_car = max(self.cars[0][0], self.cars[1][0], self.cars[2][0], self.cars[3][0], self.cars[4][0])
-		x_camera = temp_car - (self.game.DISPLAY_W / 2 - self.width_car / 2)
+	def speed_bg(self):
+		self.speed_bg = 1
 
-		if x_camera < 0:
-			x_camera = 0
-		if x_camera + self.game.DISPLAY_W > self.width_bg:
-			x_camera = self.width_bg - self.game.DISPLAY_W
+	def move_bg (self):
+		Background.speed_bg(self)
 		
-		self.temp_pos_bg = self.pos_bg
-		self.temp_pos_bg -= x_camera
-		return self.temp_pos_bg 
-		
+		flag = False
+		for i in range (5):
+			if self.cars[i][0] >= self.finish_line:
+				flag = True
+		if flag:
+			self.speed_bg = 0
+			self.speed_cars = self.speed_cars_temp[:]
+
+		self.pos_bg -= self.speed_bg
+
 
 class Obstacle(MainGameScene):
-	def __init__(self, game, parent, title, Cars, speed):
+	def __init__(self, game, parent, title, speed_cars, cars):
 		super().__init__(game, parent, title)
-		self.cars = Cars
-		self.speed = speed
-
-		self.Ob = [[self.game.DISPLAY_W, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]
+		self.speed_cars = speed_cars
+		self.cars = cars
+		self.y_ob = self.height_window / 6
 		self.width_Obstacle = 50
 		self.height_Obstacle = 50
-		self.speed_temp_ob = [0, 0]
+		self.time = [0 for i in range (5)]
 
-		self.rand = [0, 0]
-		self.start = [1, 1]
-		self.flag = [1, 1]
-		self.count = [0, 0]
-		self.flag_Ob = False
+	def draw_ob (self):
+		self.move_ob()
+		pygame.draw.rect(self.game.window, self.game.RED, (self.pos_ob[0], self.y_ob * self.lane_ob[0], self.width_Obstacle, self.height_Obstacle))
+		pygame.draw.rect(self.game.window, self.game.RED, (self.pos_ob[1], self.y_ob * self.lane_ob[1], self.width_Obstacle, self.height_Obstacle))
 
-
-	def range_Obstacle(self):
-		self.rand_temp = [0, 1, 2, 3, 4]
-		shuffle(self.rand_temp)
-
-		if self.flag[0]:
-			self.rand[0] = self.rand_temp[0]
-			self.Ob[self.rand[0]][0] += 200
-		if self.flag[1]:
-			self.rand[1] =  self.rand_temp[1]
-
-		self.speed_temp_ob[0] = self.speed[self.rand[0]]
-		self.speed_temp_ob[1] = self.speed[self.rand[1]]
-
+	def range_ob (self):
+		self.pos_ob_temp = [self.width_window + 50 * i for i in range (1, 6)]
 		
-	def draw_Obstacle(self):
-		if self.count[0] == 2:
-			self.start[0] = 0
-		if self.count[1] == 2:
-			self.start[1] = 0
+		shuffle(self.pos_ob_temp)
 
-		Obstacle.speed(self)
-		Obstacle.move(self)
-		Obstacle.check(self)
+		self.pos_ob = self.pos_ob_temp[:]
 
-		if self.start[0] == 1:
-			pygame.draw.rect(self.game.window, self.game.RED, (self.Ob[self.rand[0]][0], self.Ob[self.rand[0]][1], self.width_Obstacle, self.height_Obstacle))
+		self.lane_ob_temp = [1, 2, 3, 4, 5]
 
-		if self.start[1] == 1:
-			pygame.draw.rect(self.game.window, self.game.RED, (self.Ob[self.rand[1]][0], self.Ob[self.rand[1]][1], self.width_Obstacle, self.height_Obstacle))
+		shuffle(self.lane_ob_temp)
+
+		self.lane_ob = self.lane_ob_temp[:]
+		self.speed_temp_ob = self.speed_cars
 	
+	def speed_ob(self):
+		self.speed_ob = 1
 
-	def speed(self):
-		self.speed_Ob = 10
+	def move_ob(self):
+		self.pos_ob[0] -= 1.5
+		self.pos_ob[1] -= 1.5
 
+		if self.pos_ob[0] <= 0 and self.pos_ob[1] <= 0:
+			self.range_ob()
 
-	def move(self):
-		if self.start[0] == 1:
-			self.Ob[self.rand[0]][0] -= self.speed_Ob
-
-			if self.Ob[self.rand[0]][0] < 0:
-				self.Ob[self.rand[0]][0] = self.game.DISPLAY_W
-				self.flag[1] = 0
-				self.flag[0] = 1
-				self.count[0] += 1
-				self.range_Obstacle()
-
-		if self.start[1] == 1:		
-			self.Ob[self.rand[1]][0] -= self.speed_Ob
-
-			if self.Ob[self.rand[1]][0] < 0:
-				self.Ob[self.rand[1]][0] = self.game.DISPLAY_W
-				self.flag[0] = 0
-				self.flag[1] = 1
-				self.count[1] += 1
-				self.range_Obstacle()			
-
-
-	def check(self):
-		if self.flag_Ob:
-			if self.start[0] == 1:
-				if abs(self.Ob[self.rand[0]][0] - (self.cars[self.rand[0]][0] + self.width_car)) <=  10:
-					self.speed[self.rand[0]] = -5
-				else:
-					self.speed[self.rand[0]] = self.speed_temp_ob[0]
-
-				if self.cars[0][0] >= self.finish_line or self.cars[1][0] >= self.finish_line or self.cars[2][0] >= self.finish_line or self.cars[3][0] >= self.finish_line or self.cars[4][0] >= self.finish_line:
-					self.start[0] = 0
-					self.speed[self.rand[0]] = self.speed_temp_ob[0]
-
-			if self.start[1] == 1:
-				if abs(self.Ob[self.rand[1]][0] - (self.cars[self.rand[1]][0] + self.width_car)) <=  10:
-					self.speed[self.rand[1]] = -5
-				else:
-					self.speed[self.rand[1]] = self.speed_temp_ob[1]
-
-				if self.cars[0][0] >= self.finish_line or self.cars[1][0] >= self.finish_line or self.cars[2][0] >= self.finish_line or self.cars[3][0] >= self.finish_line or self.cars[4][0] >= self.finish_line:
-					self.start[1] = 0
-					self.speed[self.rand[1]] = self.speed_temp_ob[1]
-			
+		# if abs(self.pos_ob[0] - self.cars[self.lane_ob[0] - 1][0]) == 0:
+		# 	self.time[0] = pygame.time.get_ticks()
+		# 	self.speed_cars[self.lane_ob[0] - 1] = -0.5
+		# 	self.speed_cars[self.lane_ob[0] - 1] = self.speed_temp_ob[self.lane_ob_temp[0] - 1]
+		
+		# if pygame.time.get_ticks() - self.time[0] == 300:
+		# 	self.speed_cars[self.lane_ob[0] - 1] = self.speed_temp_ob[self.lane_ob[0] - 1]
 
 class Point(MainGameScene):
-	def __init__(self, game, parent, title, cars, speed):
+	def __init__(self, game, parent, title, speed_cars, cars):
 		super().__init__(game, parent, title)
+		self.speed_cars = speed_cars
 		self.cars = cars
-		self.speed = speed
+		self.y_po = self.height_window / 6
+		self.width_Point = 50
+		self.height_Point = 50
+		self.time = [0 for i in range (5)]
 
-		self.po = [[self.game.DISPLAY_W, self.game.DISPLAY_H / 6 * x] for x in range(1,6)]
-		self.width_point = 50
-		self.height_point = 50
-		self.speed_temp_po = [0, 0]
-		self.rand = [0, 0]
-		self.count_point = [0, 0, 0, 0, 0]
-		self.flag = 1
+	def draw_po (self):
+		self.move_po()
+		pygame.draw.rect(self.game.window, (255, 215, 0), (self.pos_po[0], self.y_po * self.lane_po[0], self.width_Point, self.height_Point))
+
+	def range_po (self):
+		self.pos_po_temp = [self.width_window + 50 * i for i in range (1, 6)]
+		
+		shuffle(self.pos_po_temp)
+
+		self.pos_po = self.pos_po_temp[:]
+
+		self.lane_po_temp = [1, 2, 3, 4, 5]
+
+		shuffle(self.lane_po_temp)
+
+		self.lane_po = self.lane_po_temp[:]
+		self.speed_temp_po = self.speed_cars
 	
+	def speed_po(self):
+		self.speed_po = 1
 
-	def range_point(self):
-		self.rand_temp = [0, 1, 2, 3, 4]
-		shuffle(self.rand_temp)
+	def move_po(self):
+		self.pos_po[0] -= 1.5
 
-		self.rand[0] = self.rand_temp[0]
-		self.speed_temp_po[0] = self.speed[self.rand[0]]
-
-
-	def draw_point(self):
-		Point.speed(self)
-		Point.move(self)
-		Point.check(self)
-
-		pygame.draw.rect(self.game.window, (255, 215, 0), (self.po[self.rand[0]][0], self.po[self.rand[0]][1], self.width_point, self.height_point))
-
-
-	def speed(self):
-		self.speed_po = 10
-	
-	def move(self):
-		self.po[self.rand[0]][0] -= self.speed_po
-
-		if self.po[self.rand[0]][0] < 0:
-			self.po[self.rand[0]][0] = self.game.DISPLAY_W
-			self.flag = 1
-			self.range_point()
-
-
-	def check(self):
-		if abs(self.po[self.rand[0]][0] - self.cars[self.rand[0]][0] <= 20 and self.flag == 1):
-			self.count_point[self.rand[0]] += 1
-			self.flag = 0
-
-		return self.range_point
-
+		if self.pos_po[0] <= 0:
+			self.range_po()
 
 class Skill(MainGameScene):
 	def __init__(self, game, parent, title, cars, speed):
@@ -480,12 +377,12 @@ class Skill(MainGameScene):
 		self.speed = speed
 		self.speed_temp = speed
 		self.cars = cars
-		po = Point(self.game, self.parent, self.title, self.cars, self.speed)
-		self.count_point = po.check()
+		self.po = Point(self.game, self.parent, self.title, self.cars, self.speed)
 		self.nv = 0
 		self.flag_skill = False
 		
 	def quang_Deadline(self):
+		print(self.po.check())
 		for i in range (5):
 			if self.count_point[i] == 1:
 				self.nv = i
@@ -533,10 +430,19 @@ class Skill(MainGameScene):
 
 	def hieu_ung_tu_nguoi_khac(self):
 		pass
-	
+
+
+			
+
+
+
+
+
+
+
+
+
+
 		
-			 
 
 
-
-		
