@@ -245,7 +245,6 @@ class Car(MainGameScene):
 		
 	
 	def draw_car(self, n):
-		print(self.flag_draw_car)
 		if self.flag_draw_car[n]:
 			Car.pos_car(self, n)
 			# print(self.speed_cars)
@@ -462,19 +461,19 @@ class Skill(MainGameScene):
 
 	
 	def range_skill(self):
-		self.Car.flag_draw_car = False
-		# print(self.Car.flag_draw_car)
-		# self.lane_ob =  self.Obstacle.range_ob()[2]
+		self.lane_ob =  self.Obstacle.range_ob()[2]
 
-		# for i in range (5):
-		# 	if self.count_po[i] == 1:
-		# 		self.flag = True
-		# 		self.nv = i
-		# 		self.count_po[self.nv] = 0
+		for i in range (5):
+			if self.count_po[i] == 1:
+				self.flag = True
+				self.nv = i
+				self.count_po[self.nv] = 0
 
-		# if self.flag:
-		# 	self.skill_4()
-	
+		if self.flag:
+			self.skill_6()
+
+
+	# tat ca cham tru ban than
 	def skill_1 (self):
 		if self.flag_skill:
 			for i in range(5):
@@ -489,7 +488,9 @@ class Skill(MainGameScene):
 			self.nv = 0
 			self.flag = False
 			self.flag_skill = True
-	
+
+
+	# Tang toc ban than
 	def skill_2(self):
 		if self.flag_skill:
 			for i in range(5):
@@ -506,6 +507,7 @@ class Skill(MainGameScene):
 			self.flag_skill = True
 	
 
+	# tranh hieu ung !loi
 	def skill_3 (self):
 		if self.flag_skill:
 			if self.nv == self.lane_ob[0]:
@@ -524,7 +526,8 @@ class Skill(MainGameScene):
 			self.nv = 0
 			self.flag = False
 			self.flag_skill = True
-		
+
+
 # Teleport
 	def skill_4(self):
 		if self.flag_skill:
@@ -536,9 +539,45 @@ class Skill(MainGameScene):
 			self.nv = 0
 			self.flag = False
 			self.flag_skill = True
-		
 
+# tia chop
+	def skill_5 (self):
+		if self.flag_skill:
+			for i in range(5):
+				if i != self.nv:
+					self.speed_cars[i] = 0
+					self.time_skill[0] = pygame.time.get_ticks()
+					self.flag_skill = False
+					# Can surface. self.game.window de ve
+					# pygame.draw.rect(self.game.window, (255, 215, 0), (0, self.width_window / 6 * i, 10, 10))
 
+		if pygame.time.get_ticks() - self.time_skill[0] >= 1000:
+			for i in range(5):
+				self.speed_cars[i] = self.speed_cars_temp[i]
+			self.nv = 0
+			self.flag = False
+			self.flag_skill = True
+
+# choang bat ki
+	def skill_6 (self):
+		if self.flag_skill:
+			while True:
+				rand_nv = randrange(0, 4)
+				if rand_nv != self.nv:
+					break
+				
+			self.speed_cars[rand_nv] = -1
+			self.time_skill[0] = pygame.time.get_ticks()
+			self.flag_skill = False
+
+		if pygame.time.get_ticks() - self.time_skill[0] >= 500:
+			for i in range(5):
+				self.speed_cars[i] = self.speed_cars_temp[i]
+			self.nv = 0
+			self.flag = False
+			self.flag_skill = True
+
+	
 		
 	
 
