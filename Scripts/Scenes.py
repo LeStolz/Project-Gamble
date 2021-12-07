@@ -9,11 +9,6 @@ class Scene:
 		self.title = title
 		self.running = False
 
-
-class MenuScene(Scene):
-	def __init__(self, game, title):
-		Scene.__init__(self, game, title)
-
 		self.buttons_assets = self.game.buttons_assets
 
 		self.menu_buttons = {
@@ -22,6 +17,7 @@ class MenuScene(Scene):
 			'Deadline Runners' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['DeadlineRunners']),
 			'Shop' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Shop']),
 			'Accounts' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Accounts']),
+			'Escape' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['Escape'].image)),
 		}
 		self.buttons = {}
 
@@ -37,10 +33,15 @@ class MenuScene(Scene):
 			v.position(count * v.top.rect.w, self.game.H - v.top.rect.h)
 			count += 1
 
+		self.menu_buttons['Escape'].resize(55, 55)
+		self.menu_buttons['Escape'].position(self.game.W - 55, 0)
+
 
 	def draw_menu_buttons(self):
 		self.check_menu_button_names()
 		self.check_menu_button_input()
+
+		self.game.draw_text(' ' + self.game.current_account, 35, self.game.WHITE, 0, 0, centerx=False, centery=False)
 
 		for i, v in self.menu_buttons.items():
 			if i == self.down_menu_button_name:
@@ -72,7 +73,7 @@ class MenuScene(Scene):
 
 
 	def check_menu_button_input(self):
-		if (self.down_menu_button_name in self.menu_buttons.keys() and self.down_menu_button_name != self.title and self.game.M_DOWN):
+		if self.down_menu_button_name in self.menu_buttons.keys() and self.down_menu_button_name != self.title and self.game.M_DOWN:
 			self.game.switch_scene(self.title, self.down_menu_button_name)
 
 
@@ -118,6 +119,7 @@ class MenuScene(Scene):
 	def draw_scene(self):
 		self.running = True
 		self.down_menu_button_name = self.title
+		self.down_button_name = ''
 		self.game.reset_input()
 
 		while self.running:
@@ -129,29 +131,91 @@ class MenuScene(Scene):
 			self.game.game_loop()
 
 
-class Openingcene(MenuScene):
+class GameScene(Scene):
 	def __init__(self, game, title):
-		MenuScene.__init__(self, game, title)
+		Scene.__init__(self, game, title)
+
+		self.buttons['Back'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+
+		self.buttons['Back'].resize(55, 55)
+		self.buttons['Back'].position(0, 0)
+
+		self.score = 0
+		self.lives = 5
+		self.back = False
+		self.finished = False
 
 		self.start_time = pygame.time.get_ticks()
-		self.text_color = self.game.WHITE
+
+
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and not self.finished and self.game.M_DOWN:
+			self.lives = 0
+			self.back = True
+			self.finished = True
+			self.game.reset_input()
+
+
+	def reset_game(self):
+		self.finished = True
+
+		self.game.draw_text('Congratulation', 65, self.game.GREEN, self.game.W // 2, self.game.H // 2 - 65)
+		self.game.draw_text(f'You earned {self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 2 + 15)
+		self.game.draw_text(f'Your total {self.game.current_money + self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 2 + 65)
+
+		if pygame.time.get_ticks() - self.start_time < 650:
+			self.game.draw_text('Click to continue', 35, self.game.WHITE, self.game.W // 2, self.game.H * 3 // 4, centery=False)
+		elif pygame.time.get_ticks() - self.start_time > 650 * 2:
+			self.start_time = pygame.time.get_ticks()
+
+		if self.game.M_DOWN:
+			if self.back:
+				if self.title == 'Deadline Runners Game':
+					self.game.switch_scene(self.title, 'Deadline Runners')
+				else:
+					self.game.switch_scene(self.title, 'Minigame')
+
+			self.game.current_money += self.score
+			self.__init__(self.game, self.title)
+
+		self.game.reset_input()
+
+
+	def draw_scene(self):
+		self.running = True
+		self.down_button_name = ''
+		self.game.reset_input()
+
+		while self.running:
+			self.draw_options()
+
+			self.draw_buttons()
+
+			self.game.game_loop()
+
+
+class Openingcene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
+
+		self.start_time = pygame.time.get_ticks()
 
 
 	def draw_options(self):
-		if (pygame.time.get_ticks() - self.start_time >= 650):
+		if pygame.time.get_ticks() - self.start_time < 650:
+			self.game.draw_text('Click to continue', 35, self.game.WHITE, self.game.W // 2, self.game.H * 3 // 4, centery=False)
+		elif pygame.time.get_ticks() - self.start_time > 650 * 2:
 			self.start_time = pygame.time.get_ticks()
-			self.text_color = self.game.BLACK if self.text_color == self.game.WHITE else self.game.WHITE
 
 		self.game.draw_text('Deadline Runners', 65, self.game.RED, self.game.W // 2, self.game.H // 4, centery=False)
-		self.game.draw_text('Click to continue', 35, self.text_color, self.game.W // 2, self.game.H * 3 // 4, centery=False)
 
 		if self.game.M_DOWN:
-			self.game.switch_scene('Opening', 'Deadline Runners')
+			self.game.switch_scene('Opening', 'Accounts')
 
 
-class SettingsScene(MenuScene):
+class SettingsScene(Scene):
 	def __init__(self, game, title):
-		MenuScene.__init__(self, game, title)
+		Scene.__init__(self, game, title)
 
 		self.qualities = {
 			'Resolution' : ['Win', 'Full'],
@@ -176,7 +240,7 @@ class SettingsScene(MenuScene):
 
 
 	def check_button_input(self):
-		if (self.down_button_name in self.buttons.keys() and self.game.M_DOWN):
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
 			true_down_button_name = self.down_button_name.replace('Left', '').replace('Right', '')
 
 			if 'Left' in self.down_button_name:
@@ -206,34 +270,27 @@ class SettingsScene(MenuScene):
 			count += 1
 
 
-class MinigameScene(MenuScene):
+class MinigameScene(Scene):
 	def __init__(self, game, title):
-		MenuScene.__init__(self, game, title)
+		Scene.__init__(self, game, title)
 
-		self.thumbnails_assets = self.game.thumbnails_assets
+		self.thumbnails = self.game.thumbnails_assets
 
-		self.buttons = {
-			'Egg Collector' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image)),
-			'Space Invader' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image)),
-		}
+		self.buttons['Egg Collector Game'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
+		self.buttons['Space Invader Game'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
 
-		self.thumbnails = {
-			'Egg Collector' : Surface(self.thumbnails_assets['EggCollector'].image),
-			'Space Invader' : Surface(self.thumbnails_assets['SpaceInvader'].image),
-		}
+		self.buttons['Egg Collector Game'].position(self.game.W // 8 + self.game.H // 4.5 - 40, self.game.H // 6 + self.game.H // 2.25 + 45)
+		self.buttons['Space Invader Game'].position(self.game.W * 7 // 8 - self.game.H * 2 // 9 - 40, self.game.H // 6 + self.game.H // 2.25 + 45)
 
-		self.buttons['Egg Collector'].position(self.game.W // 8 + 160, self.game.H // 6 + 415)
-		self.buttons['Space Invader'].position(self.game.W * 7 // 8 - 400 + 160, self.game.H // 6 + 415)
+		self.thumbnails['EggCollector'].resize(self.game.H // 2.25, self.game.H // 2.25)
+		self.thumbnails['SpaceInvader'].resize(self.game.H // 2.25, self.game.H // 2.25)
 
-		self.thumbnails['Egg Collector'].resize(400, 400)
-		self.thumbnails['Space Invader'].resize(400, 400)
-
-		self.thumbnails['Egg Collector'].position(self.game.W // 8, self.game.H // 6)
-		self.thumbnails['Space Invader'].position(self.game.W * 7 // 8 - 400, self.game.H // 6)
+		self.thumbnails['EggCollector'].position(self.game.W // 8, self.game.H // 6 + 30)
+		self.thumbnails['SpaceInvader'].position(self.game.W * 7 // 8 - self.game.H // 2.25, self.game.H // 6 + 30)
 
 
 	def check_button_input(self):
-		if (self.down_button_name in self.buttons.keys() and self.game.M_DOWN):
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
 			self.game.switch_scene(self.title, self.down_button_name)
 
 
@@ -241,31 +298,70 @@ class MinigameScene(MenuScene):
 		self.draw_menu_buttons()
 		self.draw_buttons()
 
-		self.game.draw_surface(self.thumbnails['Egg Collector'])
-		self.game.draw_surface(self.thumbnails['Space Invader'])
+		self.game.draw_surface(self.thumbnails['EggCollector'])
+		self.game.draw_surface(self.thumbnails['SpaceInvader'])
 
 		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
-		self.game.draw_text('Egg Collector', 35, self.game.WHITE, self.game.W // 8 + 200, self.game.H // 6 - 45, centery=False)
-		self.game.draw_text('Space Invader', 35, self.game.WHITE, self.game.W * 7 // 8 - 400 + 200, self.game.H // 6 - 45, centery=False)
+		self.game.draw_text('Egg Collector', 35, self.game.WHITE, self.game.W // 8 + self.game.H // 4.5, self.game.H // 6 - 15, centery=False)
+		self.game.draw_text('Space Invader', 35, self.game.WHITE, self.game.W * 7 // 8 - self.game.H * 2 // 9, self.game.H // 6 - 15, centery=False)
 
 
-class DeadlineRunnersScene(MenuScene):
+class DeadlineRunnersScene(Scene):
 	def __init__(self, game, title):
-		MenuScene.__init__(self, game, title)
+		Scene.__init__(self, game, title)
 
-		self.thumbnails_assets = self.game.thumbnails_assets
+		self.thumbnails = self.game.thumbnails_assets
+		self.buttons_assets = self.game.buttons_assets
 
-		self.buttons = {
-			'Deadline Runners Game' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image)),
+		self.qualities = {
+			'Character set' : ['Chivalry', 'Deadliners', 'Fantasy', 'Aquatica', 'Divinity'],
+			'Track length' : ['Short', 'Medium', 'Long'],
 		}
 
-		self.buttons['Deadline Runners Game'].position(self.game.W * 7 // 8 - 400 + 160, self.game.H // 6 + 415)
+		self.options = {
+			'Character set' : self.game.CHARACTER_SET,
+			'Track length' : self.game.TRACK_LENGTH,
+		}
+
+		for v in self.qualities['Character set']:
+			self.thumbnails[v].resize(self.game.H // 2.25, self.game.H // 2.25)
+			self.thumbnails[v].position(self.game.W * 4 // 5 - 174 - self.game.H // 4.5, self.game.H * 0.725 - self.game.H // 2.25 - 155)
+
+		self.buttons['Deadline Runners Game'] = Button(
+			Surface(self.buttons_assets['Bottom'].image), Surface(self.buttons_assets['DeadlineRunners'].image)
+		)
+
+		self.buttons['Deadline Runners Game'].resize(self.game.W // 5, self.game.H // 6)
+		self.buttons['Deadline Runners Game'].position(self.game.W // 5 + 220 - self.game.W // 10, self.game.H // 2 - 155)
+
+		count = 0
+		for i, v in self.options.items():
+			self.buttons[i + 'Left'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+			self.buttons[i + 'Right'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
+
+			self.buttons[i + 'Left'].position(self.game.W * 4 // 5 - 442, self.game.H * 0.725 + 100 * (count - 1) - 40)
+			self.buttons[i + 'Right'].position(self.game.W * 4 // 5, self.game.H * 0.725 + 100 * (count - 1) - 40)
+			count += 1
 
 
 	def check_button_input(self):
-		if (self.down_button_name in self.buttons.keys() and self.game.M_DOWN):
-			self.game.switch_scene(self.title, self.down_button_name)
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
+			if self.down_button_name == 'Deadline Runners Game':
+				self.game.switch_scene(self.title, self.down_button_name)
+				return
+
+			true_down_button_name = self.down_button_name.replace('Left', '').replace('Right', '')
+
+			if 'Left' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] - 1) % len(self.qualities[true_down_button_name])
+			elif 'Right' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] + 1) % len(self.qualities[true_down_button_name])
+
+			if true_down_button_name == 'Character set':
+				self.game.CHARACTER_SET = self.options[true_down_button_name]
+			elif true_down_button_name == 'Track length':
+				self.game.TRACK_LENGTH = self.options[true_down_button_name]
 
 
 	def draw_options(self):
@@ -274,10 +370,20 @@ class DeadlineRunnersScene(MenuScene):
 
 		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
+		self.game.draw_text('Start Race', 45, self.game.WHITE, self.game.W // 5 + 220, self.game.H // 2 - 215, centery=False)
 
-class ShopScene(MenuScene):
+		self.game.draw_surface(self.thumbnails[self.qualities['Character set'][self.options['Character set']]])
+
+		count = 0
+		for i, v in self.options.items():
+			self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 5, self.game.H * 0.725 + 100 * (count - 1), centerx=False)
+			self.game.draw_text(self.qualities[i][v], 35, self.game.WHITE, self.game.W * 4 // 5 - 174, self.game.H * 0.725 + 100 * (count - 1))
+			count += 1
+
+
+class ShopScene(Scene):
 	def __init__(self, game, title):
-		MenuScene.__init__(self, game, title)
+		Scene.__init__(self, game, title)
 
 
 	def draw_options(self):
@@ -286,12 +392,30 @@ class ShopScene(MenuScene):
 		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
 
-class AccountsScene(MenuScene):
+class AccountsScene(Scene):
 	def __init__(self, game, title):
-		MenuScene.__init__(self, game, title)
+		Scene.__init__(self, game, title)
 
 
 	def draw_options(self):
 		self.draw_menu_buttons()
 
 		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
+
+		self.game.draw_text('Current Account', 35, self.game.GREEN, self.game.W // 2, self.game.H // 4 - 65)
+		self.game.draw_text(self.game.current_account, 45, self.game.WHITE, self.game.W // 2, self.game.H // 4)
+		self.game.draw_text('Change Account', 35, self.game.GREEN, self.game.W // 2, self.game.H // 2 - 65)
+		self.game.draw_text('Slot 1', 45, self.game.WHITE, self.game.W // 2, self.game.H // 2)
+		self.game.draw_text('Slot 2', 45, self.game.WHITE, self.game.W // 2, self.game.H // 2 + 65)
+
+
+class EscapeScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
+
+
+	def draw_options(self):
+		self.game.running = False
+
+		for i, v in self.game.scenes.items():
+			v.running = False

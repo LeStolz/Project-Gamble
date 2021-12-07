@@ -10,12 +10,13 @@ from DeadlineRunners import *
 class Game:
 	def __init__(self):
 		pygame.init()
+		pygame.mixer.init()
 		pygame.display.set_caption('Deadline Runners')
 
 		self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 		self.FPS = 60
-		self.BLACK, self.WHITE, self.RED, self.GREEN, self.BLUE = \
-			(0, 0, 0), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
+		self.BLACK, self.WHITE, self.RED, self.GREEN, self.BLUE \
+			= (0, 0, 0), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
 
 		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_KP_ENTER, self.K_SPACE, self.K_ESCAPE, self.M_UP, self.M_DOWN \
 			= False, False, False, False, False, False, False, False, False
@@ -23,7 +24,6 @@ class Game:
 		self.FULLSCREEN_W, self.FULLSCREEN_H = pygame.display.Info().current_w, pygame.display.Info().current_h
 		self.WINSCREEN_W, self.WINSCREEN_H = 1280, 720
 		self.W, self.H = self.FULLSCREEN_W, self.FULLSCREEN_H
-		self.RESOLUTION, self.GRAPHIC, self.SOUND = 1, 1, 1
 
 		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
 		self.display = pygame.Surface((self.W, self.H))
@@ -31,10 +31,20 @@ class Game:
 		self.clock = pygame.time.Clock()
 		self.running = True
 
+		self.RESOLUTION, self.GRAPHIC, self.SOUND = 1, 1, 1
+		self.CHARACTER_SET, self.TRACK_LENGTH = 1, 1
+		self.current_account = 'Dank'
+		self.current_money = 0
+
 		self.buttons_assets = {}
 		self.thumbnails_assets = {}
 		self.egg_collector_assets = {}
+		self.space_invader_assets = {}
 		self.import_assets()
+
+		self.space_invader_sfx = {}
+		self.egg_collector_sfx = {}
+		self.import_sfx()
 
 		self.scenes = {
 			'Opening' : Openingcene(self, 'Opening'),
@@ -44,8 +54,9 @@ class Game:
 			'Deadline Runners Game' : DeadlineRunnersGameScene(self, 'Deadline Runners Game'),
 			'Shop' : ShopScene(self, 'Shop'),
 			'Accounts' : AccountsScene(self, 'Accounts'),
-			'Egg Collector' : EggCollectorScene(self, 'Egg Collector'),
-			'Space Invader' : SpaceInvaderScene(self, 'Space Invader'),
+			'Egg Collector Game' : EggCollectorGameScene(self, 'Egg Collector Game'),
+			'Space Invader Game' : SpaceInvaderGameScene(self, 'Space Invader Game'),
+			'Escape' : EscapeScene(self, 'Escape'),
 		}
 		self.current_scene = self.scenes['Opening']
 
@@ -58,6 +69,8 @@ class Game:
 
 			if '.png' in extension:
 				assets[name] = Surface(pygame.image.load(self.DIRECTORY + directory + file))
+			elif '.mp3' in extension:
+				assets[name] = self.DIRECTORY + directory + file
 
 		return assets
 
@@ -66,6 +79,12 @@ class Game:
 		self.buttons_assets = self.import_assets_from_directory('\\Assets\\Sprites\\Buttons\\')
 		self.thumbnails_assets = self.import_assets_from_directory('\\Assets\\Sprites\\Thumbnails\\')
 		self.egg_collector_assets = self.import_assets_from_directory('\\Assets\\Sprites\\EggCollector\\')
+		self.space_invader_assets = self.import_assets_from_directory('\\Assets\\Sprites\\SpaceInvader\\')
+
+
+	def import_sfx(self):
+		self.space_invader_sfx = self.import_assets_from_directory('\\Assets\\Sfx\\SpaceInvader\\')
+		self.egg_collector_sfx = self.import_assets_from_directory('\\Assets\\Sfx\\EggCollector\\')
 
 
 	def check_input(self):
@@ -75,35 +94,35 @@ class Game:
 				self.current_scene.running = False
 
 			if event.type == pygame.KEYDOWN:
-				if (event.key == pygame.K_UP or event.key == pygame.K_w):
+				if event.key == pygame.K_UP or event.key == pygame.K_w:
 					self.K_UP = True
-				if (event.key == pygame.K_DOWN or event.key == pygame.K_s):
+				if event.key == pygame.K_DOWN or event.key == pygame.K_s:
 					self.K_DOWN = True
-				if (event.key == pygame.K_RIGHT or event.key == pygame.K_d):
+				if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
 					self.K_RIGHT = True
-				if (event.key == pygame.K_LEFT or event.key == pygame.K_a):
+				if event.key == pygame.K_LEFT or event.key == pygame.K_a:
 					self.K_LEFT = True
-				if (event.key == pygame.K_KP_ENTER):
+				if event.key == pygame.K_KP_ENTER:
 					self.K_KP_ENTER = True
-				if (event.key == pygame.K_SPACE):
+				if event.key == pygame.K_SPACE:
 					self.K_SPACE = True
-				if (event.key == pygame.K_ESCAPE):
+				if event.key == pygame.K_ESCAPE:
 					self.K_ESCAPE = True
 
 			if event.type == pygame.KEYUP:
-				if (event.key == pygame.K_UP or event.key == pygame.K_w):
+				if event.key == pygame.K_UP or event.key == pygame.K_w:
 					self.K_UP = False
-				if (event.key == pygame.K_DOWN or event.key == pygame.K_s):
+				if event.key == pygame.K_DOWN or event.key == pygame.K_s:
 					self.K_DOWN = False
-				if (event.key == pygame.K_RIGHT or event.key == pygame.K_d):
+				if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
 					self.K_RIGHT = False
-				if (event.key == pygame.K_LEFT or event.key == pygame.K_a):
+				if event.key == pygame.K_LEFT or event.key == pygame.K_a:
 					self.K_LEFT = False
-				if (event.key == pygame.K_KP_ENTER):
+				if event.key == pygame.K_KP_ENTER:
 					self.K_KP_ENTER = False
-				if (event.key == pygame.K_SPACE):
+				if event.key == pygame.K_SPACE:
 					self.K_SPACE = False
-				if (event.key == pygame.K_ESCAPE):
+				if event.key == pygame.K_ESCAPE:
 					self.K_ESCAPE = False
 
 			if event.type == pygame.MOUSEBUTTONUP:
@@ -161,11 +180,11 @@ class Game:
 
 		text_rect = text_surface.get_rect(x=x, y=y)
 
-		if (centerx):
+		if centerx:
 			text_rect.centerx = x
-		if (centery):
+		if centery:
 			text_rect.centery = y
-		if (right):
+		if right:
 			text_rect.right = x
 
 		self.display.blit(text_surface, text_rect)
@@ -177,11 +196,11 @@ class Game:
 		if rect == -1:
 			rect = pygame.Rect(x, y, w, h)
 
-			if (centerx):
+			if centerx:
 				rect.centerx = x
-			if (centery):
+			if centery:
 				rect.centery = y
-			if (right):
+			if right:
 				text_rect.right = x
 
 		pygame.draw.rect(self.display, rect_color, rect)
