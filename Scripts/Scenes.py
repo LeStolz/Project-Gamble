@@ -2,6 +2,8 @@ import pygame
 from copy import copy
 from random import randint, randrange
 
+from pygame.time import Clock
+
 from Classes import Vector
 from random import shuffle
 
@@ -206,7 +208,7 @@ class MainGameScene(Scene):
 		self.Point = Point(self.game, self.parent, self.title, self.speed_cars, self.Car.cars)
 		self.count_po = self.Point.move_po()
 
-		self.Skill = Skill(self.game, self.parent, self.title, self.speed_cars, self.Car, self.count_po)
+		self.Skill = Skill(self.game, self.parent, self.title, self.speed_cars, self.Car.cars, self.count_po)
 
 
 		while self.running:
@@ -239,12 +241,15 @@ class Car(MainGameScene):
 		self.width_car = 100
 		self.height_car = 50
 		self.cars = [[0, self.height_window / 6 * x] for x in range(1,6)]
+		self.flag_draw_car = [True for i in range (5)]
 		
 	
 	def draw_car(self, n):
-		Car.pos_car(self, n)
-		# print(self.speed_cars)
-		pygame.draw.rect(self.game.window, self.game.GREEN, (self.cars[n][0], self.cars[n][1], self.width_car, self.height_car))
+		print(self.flag_draw_car)
+		if self.flag_draw_car[n]:
+			Car.pos_car(self, n)
+			# print(self.speed_cars)
+			pygame.draw.rect(self.game.window, self.game.GREEN, (self.cars[n][0], self.cars[n][1], self.width_car, self.height_car))
 
 
 	def speed_car(self):
@@ -444,6 +449,7 @@ class Skill(MainGameScene):
 		self.cars = cars
 		self.count_po = count_po
 		self.Obstacle = Obstacle(self.game, self.parent, self.title, self.speed_cars, self.cars)
+		self.Car = Car(self.game, self.parent, self.title)
 		self.lane_ob =  self.Obstacle.range_ob()[2]
 
 		self.nv = 0
@@ -456,16 +462,18 @@ class Skill(MainGameScene):
 
 	
 	def range_skill(self):
-		self.lane_ob =  self.Obstacle.range_ob()[2]
+		self.Car.flag_draw_car = False
+		# print(self.Car.flag_draw_car)
+		# self.lane_ob =  self.Obstacle.range_ob()[2]
 
-		for i in range (5):
-			if self.count_po[i] == 1:
-				self.flag = True
-				self.nv = i
-				self.count_po[self.nv] = 0
+		# for i in range (5):
+		# 	if self.count_po[i] == 1:
+		# 		self.flag = True
+		# 		self.nv = i
+		# 		self.count_po[self.nv] = 0
 
-		if self.flag:
-			self.skill_1()
+		# if self.flag:
+		# 	self.skill_4()
 	
 	def skill_1 (self):
 		if self.flag_skill:
@@ -516,6 +524,19 @@ class Skill(MainGameScene):
 			self.nv = 0
 			self.flag = False
 			self.flag_skill = True
+		
+# Teleport
+	def skill_4(self):
+		if self.flag_skill:
+				self.cars[self.nv][0] += 100
+				self.time_skill[1] = pygame.time.get_ticks()
+				self.flag_skill = False
+
+		if pygame.time.get_ticks() - self.time_skill[1] >= 10:
+			self.nv = 0
+			self.flag = False
+			self.flag_skill = True
+		
 
 
 		
