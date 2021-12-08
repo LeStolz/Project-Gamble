@@ -16,7 +16,6 @@ class Game:
 		pygame.display.set_caption('Deadline Runners')
 
 		self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '\\'
-		self.DIRECTORY = ''
 		self.FPS = 60
 		self.BLACK, self.GREY, self.WHITE, self.RED, self.GREEN, self.BLUE \
 			= (0, 0, 0), (200, 200, 200), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
