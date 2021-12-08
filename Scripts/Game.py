@@ -1,5 +1,6 @@
 import pygame
 import os
+import sys
 from copy import deepcopy
 from Scenes import *
 from Classes import *
@@ -14,7 +15,8 @@ class Game:
 		pygame.mixer.init()
 		pygame.display.set_caption('Deadline Runners')
 
-		self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+		self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '\\'
+		self.DIRECTORY = ''
 		self.FPS = 60
 		self.BLACK, self.GREY, self.WHITE, self.RED, self.GREEN, self.BLUE \
 			= (0, 0, 0), (200, 200, 200), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
@@ -29,7 +31,7 @@ class Game:
 
 		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
 		self.display = pygame.Surface((self.W, self.H))
-		self.font_name = self.DIRECTORY + '\\Assets\\Sprites\\Font.ttf'
+		self.font_name = self.DIRECTORY + 'Assets\\Sprites\\Font.ttf'
 		self.clock = pygame.time.Clock()
 		self.running = True
 
@@ -66,7 +68,7 @@ class Game:
 
 
 	def import_data(self):
-		account_data_file = open(self.DIRECTORY + '\\Scripts\\AccountData.txt', 'r')
+		account_data_file = open(self.DIRECTORY + 'Scripts\\AccountData.txt', 'r')
 
 		while True:
 			account = account_data_file.readline().rstrip('\n')
@@ -97,7 +99,7 @@ class Game:
 
 
 	def export_data(self):
-		account_data_file = open(self.DIRECTORY + '\\Scripts\\AccountData.txt', 'w')
+		account_data_file = open(self.DIRECTORY + 'Scripts\\AccountData.txt', 'w')
 
 		previous_session_account = deepcopy(self.ACCOUNT)
 		self.ACCOUNTS.pop(self.ACCOUNT['Name'])
@@ -122,6 +124,15 @@ class Game:
 		account_data_file.close()
 
 
+	def resource_path(self, relative_path):
+		try:
+			base_path = sys._MEIPASS
+		except Exception:
+			base_path = os.path.abspath('.')
+
+		return os.path.join(base_path, relative_path)
+
+
 	def import_assets_from_directory(self, directory):
 		assets = {}
 
@@ -129,23 +140,23 @@ class Game:
 			name, extension = os.path.splitext(file)
 
 			if '.png' in extension:
-				assets[name] = Surface(pygame.image.load(self.DIRECTORY + directory + file))
+				assets[name] = Surface(pygame.image.load(self.resource_path(self.DIRECTORY + directory + file)))
 			elif '.mp3' in extension:
-				assets[name] = self.DIRECTORY + directory + file
+				assets[name] = self.resource_path(self.DIRECTORY + directory + file)
 
 		return assets
 
 
 	def import_assets(self):
-		self.buttons_assets = self.import_assets_from_directory('\\Assets\\Sprites\\Buttons\\')
-		self.thumbnails_assets = self.import_assets_from_directory('\\Assets\\Sprites\\Thumbnails\\')
-		self.egg_collector_assets = self.import_assets_from_directory('\\Assets\\Sprites\\EggCollector\\')
-		self.space_invader_assets = self.import_assets_from_directory('\\Assets\\Sprites\\SpaceInvader\\')
+		self.buttons_assets = self.import_assets_from_directory('Assets\\Sprites\\Buttons\\')
+		self.thumbnails_assets = self.import_assets_from_directory('Assets\\Sprites\\Thumbnails\\')
+		self.egg_collector_assets = self.import_assets_from_directory('Assets\\Sprites\\EggCollector\\')
+		self.space_invader_assets = self.import_assets_from_directory('Assets\\Sprites\\SpaceInvader\\')
 
 
 	def import_sfx(self):
-		self.space_invader_sfx = self.import_assets_from_directory('\\Assets\\Sfx\\SpaceInvader\\')
-		self.egg_collector_sfx = self.import_assets_from_directory('\\Assets\\Sfx\\EggCollector\\')
+		self.space_invader_sfx = self.import_assets_from_directory('Assets\\Sfx\\SpaceInvader\\')
+		self.egg_collector_sfx = self.import_assets_from_directory('Assets\\Sfx\\EggCollector\\')
 
 
 	def check_input(self):

@@ -278,7 +278,7 @@ class LoginScene(Scene):
 		self.username.text = self.username.text.lower()
 		self.password.text = self.password.text.lower()
 
-		if 'new account' in self.game.username:
+		if 'new account' in self.game.username and not 'new account' in self.username.text:
 			self.game.ACCOUNTS[self.username.text] = deepcopy(self.game.ACCOUNTS[self.game.username])
 			self.game.ACCOUNTS[self.username.text]['Name'] = self.username.text
 			self.game.ACCOUNTS[self.username.text]['Password'] = self.password.text
