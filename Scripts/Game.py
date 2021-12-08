@@ -1,5 +1,6 @@
 import pygame
 import os
+from copy import deepcopy
 from Scenes import *
 from Classes import *
 from EggCollector import *
@@ -15,11 +16,12 @@ class Game:
 
 		self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 		self.FPS = 60
-		self.BLACK, self.WHITE, self.RED, self.GREEN, self.BLUE \
-			= (0, 0, 0), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
+		self.BLACK, self.GREY, self.WHITE, self.RED, self.GREEN, self.BLUE \
+			= (0, 0, 0), (200, 200, 200), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
 
-		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_KP_ENTER, self.K_SPACE, self.K_ESCAPE, self.M_UP, self.M_DOWN \
+		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_RETURN, self.K_SPACE, self.K_BACKSPACE, self.M_UP, self.M_DOWN \
 			= False, False, False, False, False, False, False, False, False
+		self.unicode = ''
 
 		self.FULLSCREEN_W, self.FULLSCREEN_H = pygame.display.Info().current_w, pygame.display.Info().current_h
 		self.WINSCREEN_W, self.WINSCREEN_H = 1280, 720
@@ -31,10 +33,10 @@ class Game:
 		self.clock = pygame.time.Clock()
 		self.running = True
 
-		self.RESOLUTION, self.GRAPHIC, self.SOUND = 1, 1, 1
-		self.CHARACTER_SET, self.TRACK_LENGTH = 1, 1
-		self.current_account = 'Dank'
-		self.current_money = 0
+		self.ACCOUNTS = {}
+		self.ACCOUNT = {}
+		self.username = ''
+		self.import_data()
 
 		self.buttons_assets = {}
 		self.thumbnails_assets = {}
@@ -47,7 +49,9 @@ class Game:
 		self.import_sfx()
 
 		self.scenes = {
-			'Opening' : Openingcene(self, 'Opening'),
+			'Opening' : OpeningScene(self, 'Opening'),
+			'Login' : LoginScene(self, 'Login'),
+			'Reward' : RewardScene(self, 'Reward'),
 			'Settings' : SettingsScene(self, 'Settings'),
 			'Minigame' : MinigameScene(self, 'Minigame'),
 			'Deadline Runners' : DeadlineRunnersScene(self, 'Deadline Runners'),
@@ -59,6 +63,63 @@ class Game:
 			'Escape' : EscapeScene(self, 'Escape'),
 		}
 		self.current_scene = self.scenes['Opening']
+
+
+	def import_data(self):
+		account_data_file = open(self.DIRECTORY + '\\Scripts\\AccountData.txt', 'r')
+
+		while True:
+			account = account_data_file.readline().rstrip('\n')
+
+			if not account:
+				break
+
+			self.ACCOUNTS[account] = {}
+			self.ACCOUNTS[account]['Name'] = str(account)
+			self.ACCOUNTS[account]['Password'] = str(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Money'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Resolution'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Graphic'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Sound'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Character set'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Track length'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Item'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Items'] = {}
+			self.ACCOUNTS[account]['Items']['Amulet'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Items']['Endurance'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Items']['Strength'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Items']['Swiftness'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Previous session'] = str(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNT = self.ACCOUNTS[account]
+			self.username = account
+
+		account_data_file.close()
+
+
+	def export_data(self):
+		account_data_file = open(self.DIRECTORY + '\\Scripts\\AccountData.txt', 'w')
+
+		previous_session_account = deepcopy(self.ACCOUNT)
+		self.ACCOUNTS.pop(self.ACCOUNT['Name'])
+		self.ACCOUNTS[previous_session_account['Name']] = previous_session_account
+
+		for account in self.ACCOUNTS.keys():
+			account_data_file.write(str(self.ACCOUNTS[account]['Name']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Password']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Money']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Resolution']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Graphic']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Sound']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Character set']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Track length']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Item']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Items']['Amulet']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Items']['Endurance']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Items']['Strength']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Items']['Swiftness']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Previous session']) + '\n')
+
+		account_data_file.close()
 
 
 	def import_assets_from_directory(self, directory):
@@ -90,8 +151,7 @@ class Game:
 	def check_input(self):
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				self.running = False
-				self.current_scene.running = False
+				self.switch_scene(self.current_scene.title, 'Escape')
 
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_UP or event.key == pygame.K_w:
@@ -102,12 +162,14 @@ class Game:
 					self.K_RIGHT = True
 				if event.key == pygame.K_LEFT or event.key == pygame.K_a:
 					self.K_LEFT = True
-				if event.key == pygame.K_KP_ENTER:
-					self.K_KP_ENTER = True
+				if event.key == pygame.K_RETURN:
+					self.K_RETURN = True
 				if event.key == pygame.K_SPACE:
 					self.K_SPACE = True
-				if event.key == pygame.K_ESCAPE:
-					self.K_ESCAPE = True
+				if event.key == pygame.K_BACKSPACE:
+					self.K_BACKSPACE = True
+				else:
+					self.unicode = event.unicode
 
 			if event.type == pygame.KEYUP:
 				if event.key == pygame.K_UP or event.key == pygame.K_w:
@@ -118,12 +180,12 @@ class Game:
 					self.K_RIGHT = False
 				if event.key == pygame.K_LEFT or event.key == pygame.K_a:
 					self.K_LEFT = False
-				if event.key == pygame.K_KP_ENTER:
-					self.K_KP_ENTER = False
+				if event.key == pygame.K_RETURN:
+					self.K_RETURN = False
 				if event.key == pygame.K_SPACE:
 					self.K_SPACE = False
-				if event.key == pygame.K_ESCAPE:
-					self.K_ESCAPE = False
+				if event.key == pygame.K_BACKSPACE:
+					self.K_BACKSPACE = False
 
 			if event.type == pygame.MOUSEBUTTONUP:
 				self.M_UP = True
@@ -138,8 +200,9 @@ class Game:
 
 
 	def reset_input(self):
-		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_KP_ENTER, self.K_SPACE, self.K_ESCAPE, self.M_UP, self.M_DOWN \
+		self.K_UP, self.K_DOWN, self.K_RIGHT, self.K_LEFT, self.K_RETURN, self.K_SPACE, self.K_BACKSPACE, self.M_UP, self.M_DOWN \
 			= False, False, False, False, False, False, False, False, False
+		self.unicode = ''
 
 
 	def game_loop(self):
@@ -151,13 +214,16 @@ class Game:
 		pygame.display.update()
 
 
-	def switch_scene(self, old_scene, new_scene):
+	def switch_scene(self, old_scene, new_scene, username=''):
 		self.scenes[old_scene].running = False
 		self.current_scene = self.scenes[new_scene]
+		if username != '':
+			self.username = username
+			self.scenes['Login'].__init__(self, 'Login')
 
 
 	def set_window_size(self):
-		if self.RESOLUTION:
+		if self.ACCOUNT['Resolution']:
 			self.W, self.H = self.FULLSCREEN_W, self.FULLSCREEN_H
 			self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
 		else:
