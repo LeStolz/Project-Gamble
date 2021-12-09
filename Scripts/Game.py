@@ -43,6 +43,7 @@ class Game:
 		self.thumbnails_assets = {}
 		self.egg_collector_assets = {}
 		self.space_invader_assets = {}
+		self.deadline_runners_assets = {}
 		self.import_assets()
 
 		self.space_invader_sfx = {}
@@ -151,6 +152,7 @@ class Game:
 		self.thumbnails_assets = self.import_assets_from_directory('Assets\\Sprites\\Thumbnails\\')
 		self.egg_collector_assets = self.import_assets_from_directory('Assets\\Sprites\\EggCollector\\')
 		self.space_invader_assets = self.import_assets_from_directory('Assets\\Sprites\\SpaceInvader\\')
+		self.deadline_runners_assets = self.import_assets_from_directory('Assets\\Sprites\\DeadlineRunners\\')
 
 
 	def import_sfx(self):
