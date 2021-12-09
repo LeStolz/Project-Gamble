@@ -233,6 +233,7 @@ class LoginScene(Scene):
 			'',
 			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 68, self.game.W * 4 // 6 - 310, 40, self.game.GREY, centerx=False)
 		)
+		self.game.display.fill(self.game.BLACK)
 
 		self.selected = self.username
 
@@ -602,7 +603,7 @@ class AccountsScene(Scene):
 		Scene.__init__(self, game, title)
 
 		self.buttons = {}
-		offset = self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 155).w // 2
+		offset = self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 142).w // 2
 
 		for i, v in self.game.ACCOUNTS.items():
 			if i != self.game.ACCOUNT['Name']:
@@ -612,8 +613,10 @@ class AccountsScene(Scene):
 		for i, v in self.game.ACCOUNTS.items():
 			if i != self.game.ACCOUNT['Name']:
 				self.buttons[i] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
-				self.buttons[i].position(self.game.W // 2 - 100 - offset, self.game.H * 0.281 - 155 + 185 - 40 + 100 * count)
+				self.buttons[i].position(self.game.W // 2 - 100 - offset, self.game.H * 0.281 - 142 + 185 - 40 + 100 * count)
 				count += 1
+
+		self.game.display.fill(self.game.BLACK)
 
 
 	def check_button_input(self):
@@ -628,14 +631,14 @@ class AccountsScene(Scene):
 
 		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
-		self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 155)
-		self.game.draw_text(self.game.ACCOUNT['Name'], 35, self.game.WHITE, self.game.W // 2, self.game.H * 0.281 - 155 + 60)
-		self.game.draw_text('Change Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 155 + 120)
+		self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 142)
+		self.game.draw_text(self.game.ACCOUNT['Name'], 35, self.game.WHITE, self.game.W // 2, self.game.H * 0.281 - 142 + 60)
+		self.game.draw_text('Change Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 142 + 120)
 
 		count = 0
 		for i, v in self.game.ACCOUNTS.items():
 			if i != self.game.ACCOUNT['Name']:
-				self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 2, self.game.H * 0.281 - 155 + 185 + 100 * count)
+				self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 2, self.game.H * 0.281 - 142 + 185 + 100 * count)
 				count += 1
 
 
