@@ -1,13 +1,9 @@
+import pygame
 from math import sqrt
-from math import ceil
 
 
 class Vector:
-	def __init__(self, x=0, y=0, rect=-1):
-		if rect != -1:
-			x = rect.x
-			y = rect.y
-
+	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 
@@ -17,9 +13,9 @@ class Vector:
 
 
 	def normalize(self):
-		if self.length() > 1:
-			self.x = ceil(self.x / self.length()) - (self.x < 0)
-			self.y = ceil(self.y / self.length()) - (self.y < 0)
+		if self.length() > 0:
+			self.x = round(self.x / self.length())
+			self.y = round(self.y / self.length())
 
 		return self
 
@@ -45,21 +41,67 @@ class Vector:
 
 
 class Surface:
-	def __init__(self, x, y, r, w, h, drawn=False):
-		self.Image = -1
-		self.Rect = -1
+	def __init__(self, image, rect=-1):
+		if rect == -1:
+			rect = image.get_rect(x=0, y=0)
 
-		self.x = x	# x coordinate
-		self.y = y	# y coordinate
-		self.r = r	# rotation
-		self.w = w	# width
-		self.h = h	# height
-		self.drawn = drawn
+		self.image = image
+		self.rect = rect
 
 
-	def init_Image(self, Image):
-		self.Image = Image
+	def position(self, x, y):
+		self.rect.x = x
+		self.rect.y = y
 
 
-	def init_Rect(self, Rect):
-		self.Rect = Rect
+	def rotate(self, r):
+		self.image = pygame.image.rotate(self.image, r)
+
+
+	def resize(self, w, h):
+		self.rect.w = w
+		self.rect.h = h
+
+		self.image = pygame.transform.scale(self.image, (self.rect.w, self.rect.h))
+
+
+class Button:
+	def __init__(self, bottom, top, text=''):
+		self.bottom = bottom
+		self.top = top
+		self.text = text
+
+		self.top_normal_y = self.top.rect.y
+
+
+	def position(self, x, y):
+		self.bottom.position(x, y)
+		self.top.position(x, y)
+
+		self.top_normal_y = self.top.rect.y
+
+
+	def rotate(self, r):
+		self.bottom.rotate(r)
+		self.top.rotate(r)
+
+
+	def resize(self, w, h):
+		self.bottom.resize(w, h)
+		self.top.resize(w, h)
+
+
+	def normal(self):
+		self.top.rect.y = self.top_normal_y
+
+
+	def hover(self):
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.04
+
+
+	def up(self):
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.08
+
+
+	def down(self):
+		self.top.rect.y = self.top_normal_y + self.top.rect.h * 0.11

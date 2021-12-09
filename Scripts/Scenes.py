@@ -1,606 +1,652 @@
 import pygame
-from copy import copy
-from random import randint, randrange
-
-from pygame.time import Clock
-
-from Classes import Vector
-from random import shuffle
+import random
+import datetime
+from copy import deepcopy
+from Classes import *
 
 
 class Scene:
-	def __init__(self, game, parent, title):
+	def __init__(self, game, title):
 		self.game = game
-		self.parent = parent
 		self.title = title
-		self.running = True
+		self.running = False
+
+		self.buttons_assets = self.game.buttons_assets
+
+		self.menu_buttons = {
+			'Settings' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Settings']),
+			'Minigame' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Minigame']),
+			'Deadline Runners' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['DeadlineRunners']),
+			'Shop' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Shop']),
+			'Accounts' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Accounts']),
+			'Escape' : Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['Escape'].image)),
+		}
+		self.buttons = {}
+
+		self.hover_menu_button_name = ''
+		self.up_menu_button_name = ''
+		self.down_menu_button_name = ''
+		self.hover_button_name = ''
+		self.down_button_name = ''
+
+		count = 0
+		for i, v in self.menu_buttons.items():
+			v.resize(self.game.W // 5, self.game.H // 6)
+			v.position(count * v.top.rect.w, self.game.H - v.top.rect.h)
+			count += 1
+
+		self.menu_buttons['Escape'].resize(55, 55)
+		self.menu_buttons['Escape'].position(self.game.W - 55, 0)
 
 
-class MenuScene(Scene):
-	def __init__(self, game, parent, title, selections):
-		Scene.__init__(self, game, parent, title)
+	def draw_menu_buttons(self):
+		self.check_menu_button_names()
+		self.check_menu_button_input()
 
-		self.selections = selections
-		self.selected_index = 0
+		self.game.draw_text(' ' + self.game.ACCOUNT['Name'], 35, self.game.WHITE, 0, 0, centerx=False, centery=False)
+
+		for i, v in self.menu_buttons.items():
+			if i == self.down_menu_button_name:
+				v.down()
+			elif i == self.up_menu_button_name:
+				v.up()
+			elif i == self.hover_menu_button_name:
+				v.hover()
+			else:
+				v.normal()
+
+			self.game.draw_button(v)
+
+
+	def check_menu_button_names(self):
+		self.hover_menu_button_name = ''
+
+		for i, v in self.menu_buttons.items():
+			if v.top.rect.collidepoint(pygame.mouse.get_pos()):
+				self.hover_menu_button_name = i
+				break
+
+		if self.game.M_UP and self.down_menu_button_name != '':
+			self.up_menu_button_name = self.down_menu_button_name
+			self.down_menu_button_name = ''
+		elif self.game.M_DOWN and self.hover_menu_button_name != '':
+			self.down_menu_button_name = self.hover_menu_button_name
+			self.hover_menu_button_name = ''
+
+
+	def check_menu_button_input(self):
+		if self.down_menu_button_name in self.menu_buttons.keys() and self.down_menu_button_name != self.title and self.game.M_DOWN:
+			self.game.switch_scene(self.title, self.down_menu_button_name)
+
+
+	def draw_buttons(self):
+		self.check_button_names()
+		self.check_button_input()
+
+		for i, v in self.buttons.items():
+			if i == self.down_button_name:
+				v.down()
+			elif i == self.hover_button_name:
+				v.hover()
+			else:
+				v.normal()
+
+			self.game.draw_button(v)
+
+
+	def check_button_names(self):
+		self.hover_button_name = ''
+
+		for i, v in self.buttons.items():
+			if v.top.rect.collidepoint(pygame.mouse.get_pos()):
+				self.hover_button_name = i
+				break
+
+		if self.game.M_UP and self.down_button_name != '':
+			self.hover_button_name = self.down_button_name
+			self.down_button_name = ''
+		elif self.game.M_DOWN and self.hover_button_name != '':
+			self.down_button_name = self.hover_button_name
+			self.hover_button_name = ''
+
+
+	def check_button_input(self):
+		pass
+
+
+	def draw_options(self):
+		pass
 
 
 	def draw_scene(self):
 		self.running = True
+		self.down_menu_button_name = self.title
+		self.down_button_name = ''
+		self.game.reset_input()
 
 		while self.running:
-			self.check_input()
 			self.game.display.fill(self.game.BLACK)
 
-			self.game.draw_text(text=self.title, size=40, y=self.game.DISPLAY_H // 2 - 50)
+			self.draw_options()
 
-			for index, selection in enumerate(self.selections):
-				self.game.draw_text(text=selection, size=20, y=self.game.DISPLAY_H // 2 + index * 30)
+			self.game.reset_input()
+			self.game.game_loop()
 
-			self.game.draw_text(
-				text='>', size=20,
-				x=self.game.DISPLAY_W // 2 - 100,
-				y=self.game.DISPLAY_H // 2 + self.selected_index * 30
-			)
 
-			self.game.window.blit(self.game.display, (0, 0))
-			pygame.display.update()
+class GameScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
+		self.buttons['Back'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+
+		self.buttons['Back'].resize(55, 55)
+		self.buttons['Back'].position(0, 0)
+
+		self.score = 0
+		self.lives = 5
+		self.back = False
+		self.finished = False
+
+		self.start_time = pygame.time.get_ticks()
+
+
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and not self.finished and self.game.M_DOWN:
+			self.lives = 0
+			self.back = True
+			self.finished = True
 			self.game.reset_input()
 
 
-	def check_input(self):
-		self.game.check_input()
+	def reset_game(self):
+		self.finished = True
 
-		if self.game.K_UP:
-			self.selected_index = (self.selected_index - 1) % len(self.selections)
-		if self.game.K_DOWN:
-			self.selected_index = (self.selected_index + 1) % len(self.selections)
+		self.game.draw_text('Game over', 65, self.game.GREEN, self.game.W // 2, self.game.H // 3 - 65)
+		self.game.draw_text(f'You earned {self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 15)
+		self.game.draw_text(f'Your money {self.game.ACCOUNT["Money"] + self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 65)
 
-		selected_name = self.selections[self.selected_index]
+		if pygame.time.get_ticks() - self.start_time < 650:
+			self.game.draw_text('Click to continue', 35, self.game.WHITE, self.game.W // 2, self.game.H * 3 // 4, centery=False)
+		elif pygame.time.get_ticks() - self.start_time > 650 * 2:
+			self.start_time = pygame.time.get_ticks()
 
-		if self.game.K_RIGHT:
-			if selected_name == 'Quit':
-				self.game.quit()
-			elif selected_name == 'Back':
-				self.game.current_scene = self.game.scenes[self.parent]
-			elif selected_name in self.game.scenes:
-				self.game.current_scene = self.game.scenes[selected_name]
+		if self.game.M_DOWN:
+			if self.back:
+				if self.title == 'Deadline Runners Game':
+					self.game.switch_scene(self.title, 'Deadline Runners')
+				else:
+					self.game.switch_scene(self.title, 'Minigame')
 
-			self.running = False
-		if self.game.K_LEFT:
-			self.game.current_scene = self.game.scenes[self.parent]
+			self.game.ACCOUNT['Money'] += self.score
+			self.__init__(self.game, self.title)
 
-			self.running = False
+		self.game.reset_input()
 
 
-class SnakeGameScene(Scene):
-	def __init__(self, game, parent, title):
-		Scene.__init__(self, game, parent, title)
+	def draw_scene(self):
+		self.running = True
+		self.down_button_name = ''
+		self.game.reset_input()
 
-		self.SIZE = 20
+		while self.running:
+			self.draw_options()
 
-		self.speed = 1
-		self.direction = Vector()
+			self.draw_buttons()
 
-		self.snake_length = 4
-		self.snake_rects = [
-			self.game.draw_rect(
-				x=randint(0 + self.SIZE, self.game.DISPLAY_W - self.SIZE),
-				y=randint(0 + self.SIZE, self.game.DISPLAY_H - self.SIZE),
-				w=self.SIZE, h=self.SIZE, color=self.game.RED
-			)
-		]
+			self.game.game_loop()
 
-		self.fruit_rect = self.game.draw_rect(
-			x=randint(0 + self.SIZE, self.game.DISPLAY_W - self.SIZE),
-			y=randint(0 + self.SIZE, self.game.DISPLAY_H - self.SIZE),
-			w=self.SIZE, h=self.SIZE, color=self.game.RED
+
+class OpeningScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
+
+		self.start_time = pygame.time.get_ticks()
+
+
+	def draw_options(self):
+		if pygame.time.get_ticks() - self.start_time < 650:
+			self.game.draw_text('Click to continue', 35, self.game.WHITE, self.game.W // 2, self.game.H * 3 // 4, centery=False)
+		elif pygame.time.get_ticks() - self.start_time > 650 * 2:
+			self.start_time = pygame.time.get_ticks()
+
+		self.game.draw_text('Deadline Runners', 65, self.game.RED, self.game.W // 2, self.game.H // 3 - 65)
+
+		if self.game.M_DOWN:
+			self.game.switch_scene(self.title, 'Login')
+
+
+class LoginScene(Scene):
+	class TextBox:
+		def __init__(self, text, rect):
+			self.text = text
+			self.rect = rect
+
+
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
+
+		self.username = self.TextBox(
+			self.game.username,
+			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 18, self.game.W * 4 // 6 - 310, 40, self.game.GREY, centerx=False)
+		)
+		self.password = self.TextBox(
+			'',
+			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 68, self.game.W * 4 // 6 - 310, 40, self.game.GREY, centerx=False)
 		)
 
+		self.selected = self.username
 
-	def draw_scene(self):
-		self.running = True
+		self.start_time = pygame.time.get_ticks()
 
-		while self.running:
-			self.check_input()
-			self.game.display.fill(self.game.BLACK)
 
-			self.move_snake()
-			self.draw_snake()
+	def draw_options(self):
+		if pygame.time.get_ticks() - self.start_time < 650:
+			self.game.draw_text('Click to continue', 35, self.game.WHITE, self.game.W // 2, self.game.H * 3 // 4, centery=False)
+		elif pygame.time.get_ticks() - self.start_time > 650 * 2:
+			self.start_time = pygame.time.get_ticks()
 
-			self.draw_fruit()
+		self.game.draw_text('Login', 65, self.game.GREEN, self.game.W // 2, self.game.H // 3 - 65)
 
-			self.handle_game_over()
+		self.game.draw_rect(rect=self.username.rect, rect_color=self.game.GREY)
+		self.game.draw_rect(rect=self.password.rect, rect_color=self.game.GREY)
+		self.game.draw_rect(rect=self.selected.rect, rect_color=self.game.WHITE)
+		self.game.draw_text('Username', 35, self.game.GREEN, self.game.W // 6, self.game.H // 3 + 15, centerx=False)
+		self.game.draw_text('PassWord', 35, self.game.GREEN, self.game.W // 6, self.game.H // 3 + 65, centerx=False)
+		self.game.draw_text(' ' + self.username.text, 35, self.game.BLACK, self.game.W // 6 + 310, self.game.H // 3 + 15, centerx=False)
+		self.game.draw_text(' ' + self.password.text, 35, self.game.BLACK, self.game.W // 6 + 310, self.game.H // 3 + 65, centerx=False)
 
-			self.game.window.blit(self.game.display, (0, 0))
-			pygame.display.update()
+		if self.game.K_RETURN:
+			self.selected = self.password
+			self.check_account()
+		elif self.game.K_BACKSPACE:
+			self.selected.text = self.selected.text[:-1]
+		else:
+			self.selected.text += self.game.unicode
 
+		if self.game.M_DOWN:
+			if self.username.rect.collidepoint(pygame.mouse.get_pos()):
+				self.selected = self.username
+				return
+			elif self.password.rect.collidepoint(pygame.mouse.get_pos()):
+				self.selected = self.password
+				return
 
-	def move_snake(self):
-		self.snake_rects.append(copy(self.snake_rects[-1]))
-		self.snake_rects[-1].x += self.direction.x * self.speed
-		self.snake_rects[-1].y += self.direction.y * self.speed
+			self.check_account()
 
-		self.snake_rects[-1].x = \
-			self.snake_rects[-1].x if self.snake_rects[-1].x >= -self.SIZE else self.game.DISPLAY_W + self.SIZE
-		self.snake_rects[-1].x = \
-			self.snake_rects[-1].x if self.snake_rects[-1].x <= self.game.DISPLAY_W + self.SIZE else -self.SIZE
 
-		self.snake_rects[-1].y = \
-			self.snake_rects[-1].y if self.snake_rects[-1].y >= -self.SIZE else self.game.DISPLAY_H + self.SIZE
-		self.snake_rects[-1].y = \
-			self.snake_rects[-1].y if self.snake_rects[-1].y <= self.game.DISPLAY_H + self.SIZE else -self.SIZE
+	def check_account(self):
+		self.username.text = self.username.text.lower()
+		self.password.text = self.password.text.lower()
 
+		if 'new account' in self.game.username and not 'new account' in self.username.text:
+			self.game.ACCOUNTS[self.username.text] = deepcopy(self.game.ACCOUNTS[self.game.username])
+			self.game.ACCOUNTS[self.username.text]['Name'] = self.username.text
+			self.game.ACCOUNTS[self.username.text]['Password'] = self.password.text
+			self.game.ACCOUNTS.pop(self.game.username)
 
-	def draw_snake(self):
-		if len(self.snake_rects) > self.snake_length * self.SIZE:
-			self.snake_rects.pop(0)
+		if self.username.text in self.game.ACCOUNTS and self.game.ACCOUNTS[self.username.text]['Password'] == self.password.text:
+			self.game.ACCOUNT = self.game.ACCOUNTS[self.username.text]
+			self.game.set_window_size()
 
-		for index in range(len(self.snake_rects) - 1, -1, -self.SIZE):
-			self.game.draw_rect(color=self.game.GREEN, rect=self.snake_rects[index])
+			if (datetime.datetime.now()).strftime('%m/%d/%Y') != self.game.ACCOUNT['Previous session']:
+				self.game.switch_scene(self.title, 'Reward')
+			else:
+				self.game.switch_scene(self.title, 'Accounts')
+		else:
+			pass
 
 
-	def draw_fruit(self):
-		if self.snake_rects[-1].colliderect(self.fruit_rect):
-			self.snake_length += 1
+class RewardScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
-			self.fruit_rect.x = randint(0 + self.SIZE, self.game.DISPLAY_W - self.SIZE)
-			self.fruit_rect.y = randint(0 + self.SIZE, self.game.DISPLAY_H - self.SIZE)
+		self.score = 5000
 
-		self.game.draw_rect(color=self.game.RED, rect=self.fruit_rect)
+		self.start_time = pygame.time.get_ticks()
 
 
-	def handle_game_over(self):
-		for index in range(len(self.snake_rects) - 1 - self.SIZE, -1, -self.SIZE):
-			if self.snake_rects[-1].colliderect(self.snake_rects[index]):
-				collision_direction = (Vector(rect=self.snake_rects[index]) - Vector(rect=self.snake_rects[-1])).normalize()
+	def draw_options(self):
+		self.game.draw_text('Daily reward', 65, self.game.GREEN, self.game.W // 2, self.game.H // 3 - 65)
+		self.game.draw_text(f'You earned {self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 15)
+		self.game.draw_text(f'Your money {self.game.ACCOUNT["Money"] + self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 65)
 
-				if collision_direction / self.direction > 0.8:
-					self.game.current_scene = self.game.scenes['Game Over']
+		if pygame.time.get_ticks() - self.start_time < 650:
+			self.game.draw_text('Click to continue', 35, self.game.WHITE, self.game.W // 2, self.game.H * 3 // 4, centery=False)
+		elif pygame.time.get_ticks() - self.start_time > 650 * 2:
+			self.start_time = pygame.time.get_ticks()
 
-					self.__init__(self.game, self.parent, self.title)
+		if self.game.M_DOWN:
+			self.game.switch_scene(self.title, 'Accounts')
 
-					self.game.display.fill(self.game.BLACK)
-					self.game.reset_input()
+			self.game.ACCOUNT['Money'] += self.score
+			self.game.ACCOUNT['Previous session'] = (datetime.datetime.now()).strftime('%m/%d/%Y')
+			self.__init__(self.game, self.title)
 
-					self.running = False
+		self.game.reset_input()
 
-					return
 
+class SettingsScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
-	def check_input(self):
-		self.game.check_input()
+		self.qualities = {
+			'Resolution' : ['Win', 'Full'],
+			'Graphic' : ['Low', 'Medium', 'High'],
+			'Sound' : ['0', '50', '100'],
+		}
 
-		if self.game.K_UP or self.game.K_DOWN or self.game.K_RIGHT or self.game.K_LEFT:
-			self.direction = Vector()
+		self.options = {
+			'Resolution' : self.game.ACCOUNT['Resolution'],
+			'Graphic' : self.game.ACCOUNT['Graphic'],
+			'Sound' : self.game.ACCOUNT['Sound'],
+		}
 
-		if self.game.K_UP:
-			self.direction.y -= 1
-		if self.game.K_DOWN:
-			self.direction.y += 1
-		if self.game.K_RIGHT:
-			self.direction.x += 1
-		if self.game.K_LEFT:
-			self.direction.x -= 1
+		count = 0
+		for i, v in self.options.items():
+			self.buttons[i + 'Left'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+			self.buttons[i + 'Right'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
 
-		self.direction.normalize()
+			self.buttons[i + 'Left'].position(self.game.W * 5 // 6 - 340, self.game.H // 3 + 100 * (count - 1) - 40)
+			self.buttons[i + 'Right'].position(self.game.W * 5 // 6, self.game.H // 3 + 100 * (count - 1) - 40)
+			count += 1
 
-# ================================================================================================================
 
-class MainGameScene(Scene):
-	def __init__(self, game, parent, title):
-		Scene.__init__(self, game, parent, title)
-		self.width_window, self.height_window = pygame.display.get_surface().get_size()
-		self.finish_line = self.width_window - 150
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
+			true_down_button_name = self.down_button_name.replace('Left', '').replace('Right', '')
 
+			if 'Left' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] - 1) % len(self.qualities[true_down_button_name])
+			elif 'Right' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] + 1) % len(self.qualities[true_down_button_name])
 
-	def draw_scene(self):
-		self.running = True
-		
-		self.Car = Car(self.game, self.parent, self.title)
-		self.speed_cars = self.Car.speed_car()
+			if true_down_button_name == 'Resolution':
+				self.game.ACCOUNT['Resolution'] = self.options[true_down_button_name]
+				self.game.set_window_size()
+			elif true_down_button_name == 'Graphic':
+				self.game.ACCOUNT['Graphic'] = self.options[true_down_button_name]
+			elif true_down_button_name == 'Sound':
+				self.game.ACCOUNT['Sound'] = self.options[true_down_button_name]
 
-		self.Background = Background(self.game, self.parent, self.title, self.speed_cars, self.Car.cars)
 
-		self.Obstacle = Obstacle(self.game, self.parent, self.title, self.speed_cars, self.Car.cars)
-		self.Obstacle.range_ob()
+	def draw_options(self):
+		self.draw_menu_buttons()
+		self.draw_buttons()
 
-		self.Point = Point(self.game, self.parent, self.title, self.speed_cars, self.Car.cars)
-		self.count_po = self.Point.move_po()
+		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
-		self.Skill = Skill(self.game, self.parent, self.title, self.speed_cars, self.Car.cars, self.count_po)
+		count = 0
+		for i, v in self.options.items():
+			self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 6, self.game.H // 3 + 100 * (count - 1), centerx=False)
+			self.game.draw_text(self.qualities[i][v], 35, self.game.WHITE, self.game.W * 5 // 6 - 123, self.game.H // 3 + 100 * (count - 1))
+			count += 1
 
 
-		while self.running:
-			self.check_input()
+class MinigameScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
-			self.game.display.fill(self.game.BLACK)
-			self.game.window.blit(self.game.display, (0, 0))
+		self.thumbnails = self.game.thumbnails_assets
 
-			self.width_window, self.height_window = pygame.display.get_surface().get_size()
-			
-			self.Background.draw_bg()
+		self.buttons['Egg Collector Game'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
+		self.buttons['Space Invader Game'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
 
-			for n in range (5):
-				self.Car.draw_car(n)
+		self.buttons['Egg Collector Game'].position(self.game.W // 8 + self.game.H // 4.5 - 40, self.game.H // 6 + self.game.H // 2.25 + 45)
+		self.buttons['Space Invader Game'].position(self.game.W * 7 // 8 - self.game.H * 2 // 9 - 40, self.game.H // 6 + self.game.H // 2.25 + 45)
 
-			self.Point.draw_po()
-			self.Obstacle.draw_ob()
-			self.Skill.range_skill()
+		self.thumbnails['EggCollector'].resize(self.game.H // 2.25, self.game.H // 2.25)
+		self.thumbnails['SpaceInvader'].resize(self.game.H // 2.25, self.game.H // 2.25)
 
-			pygame.display.update()
-	
+		self.thumbnails['EggCollector'].position(self.game.W // 8, self.game.H // 6 + 30)
+		self.thumbnails['SpaceInvader'].position(self.game.W * 7 // 8 - self.game.H // 2.25, self.game.H // 6 + 30)
 
-	def check_input(self):
-		self.game.check_input()
 
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
+			self.game.switch_scene(self.title, self.down_button_name)
 
-class Car(MainGameScene):
-	def __init__(self, game, parent, title):
-		super().__init__(game, parent, title)
-		self.width_car = 100
-		self.height_car = 50
-		self.cars = [[0, self.height_window / 6 * x] for x in range(1,6)]
-		self.flag_draw_car = [True for i in range (5)]
-		
-	
-	def draw_car(self, n):
-		if self.flag_draw_car[n]:
-			Car.pos_car(self, n)
-			# print(self.speed_cars)
-			pygame.draw.rect(self.game.window, self.game.GREEN, (self.cars[n][0], self.cars[n][1], self.width_car, self.height_car))
 
+	def draw_options(self):
+		self.draw_menu_buttons()
+		self.draw_buttons()
 
-	def speed_car(self):
-		self.speed_temp = [0.2, 0.25, 0.3, 0.25, 0.2]
+		self.game.draw_surface(self.thumbnails['EggCollector'])
+		self.game.draw_surface(self.thumbnails['SpaceInvader'])
 
-		shuffle(self.speed_temp)
+		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
-		self.speed_cars = self.speed_temp[:]
+		self.game.draw_text('Egg Collector', 35, self.game.WHITE, self.game.W // 8 + self.game.H // 4.5, self.game.H // 6 - 15, centery=False)
+		self.game.draw_text('Space Invader', 35, self.game.WHITE, self.game.W * 7 // 8 - self.game.H * 2 // 9, self.game.H // 6 - 15, centery=False)
 
-		return self.speed_cars
 
+class DeadlineRunnersScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
-	def pos_car(self, n):		
-		if self.cars[n][0] <= self.finish_line:
-			self.cars[n][0] += self.speed_cars[n]
+		self.thumbnails = self.game.thumbnails_assets
+		self.buttons_assets = self.game.buttons_assets
 
+		self.qualities = {
+			'Character set' : ['Chivalry', 'Deadliners', 'Fantasy', 'Aquatica', 'Divinity'],
+			'Track length' : ['Short', 'Medium', 'Long'],
+		}
 
-class Background(MainGameScene):
-	def __init__(self, game, parent, title,speed_cars, cars):
-		super().__init__(game, parent, title)
-		self.speed_cars = speed_cars
-		self.speed_cars_temp = [speed_cars[i] + 1 for i in range (5)]
-		self.cars = cars
-		self.pos_bg = 0
+		self.options = {
+			'Character set' : self.game.ACCOUNT['Character set'],
+			'Track length' : self.game.ACCOUNT['Track length'],
+		}
 
-		self.BG = pygame.image.load(r'C:\\D\\Source_Code_FIT\\Project-Gamble\\Scripts\\Background.png')
-		self.BG = pygame.transform.scale(self.BG, (10000, 720))
-		self.width_bg = self.BG.get_width()
-		
+		for v in self.qualities['Character set']:
+			self.thumbnails[v].resize(self.game.H // 2.25, self.game.H // 2.25)
+			self.thumbnails[v].position(self.game.W * 5 // 6 - 174 - self.game.H // 4.5, self.game.H * 0.725 - self.game.H // 2.25 - 155)
 
-	def draw_bg (self):
-		self.move_bg()
+		self.buttons['Deadline Runners Game'] = Button(
+			Surface(self.buttons_assets['Bottom'].image), Surface(self.buttons_assets['DeadlineRunners'].image)
+		)
 
-		self.game.window.blit(self.BG, (self.pos_bg, 0))
+		self.buttons['Deadline Runners Game'].resize(self.game.W // 5, self.game.H // 6)
+		self.buttons['Deadline Runners Game'].position(self.game.W // 6 + 220 - self.game.W // 10, self.game.H // 2 - 155)
 
+		count = 0
+		for i, v in self.options.items():
+			self.buttons[i + 'Left'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+			self.buttons[i + 'Right'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
 
-	def speed_bg(self):
-		self.speed_bg = 1
+			self.buttons[i + 'Left'].position(self.game.W * 5 // 6 - 442, self.game.H * 0.725 + 100 * (count - 1) - 40)
+			self.buttons[i + 'Right'].position(self.game.W * 5 // 6, self.game.H * 0.725 + 100 * (count - 1) - 40)
+			count += 1
 
 
-	def move_bg (self):
-		Background.speed_bg(self)
-		
-		flag = False
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
+			true_down_button_name = self.down_button_name.replace('Left', '').replace('Right', '')
 
-		for i in range (5):
-			if self.cars[i][0] >= self.finish_line:
-				flag = True
+			if self.down_button_name == 'Deadline Runners Game':
+				self.game.switch_scene(self.title, self.down_button_name)
+				return
 
-		if flag:
-			self.speed_bg = 0
-			for i in range (5):
-				self.speed_cars[i] = self.speed_cars_temp[i]
+			if 'Left' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] - 1) % len(self.qualities[true_down_button_name])
+			elif 'Right' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] + 1) % len(self.qualities[true_down_button_name])
 
-		self.pos_bg -= self.speed_bg
+			if true_down_button_name == 'Character set':
+				self.game.ACCOUNT['Character set'] = self.options[true_down_button_name]
+			elif true_down_button_name == 'Track length':
+				self.game.ACCOUNT['Track length'] = self.options[true_down_button_name]
 
 
-class Obstacle(MainGameScene):
-	def __init__(self, game, parent, title, speed_cars, cars):
-		super().__init__(game, parent, title)
-		self.speed_cars = speed_cars
-		self.speed_cars_temp = speed_cars[:]
-		self.cars = cars
+	def draw_options(self):
+		self.draw_menu_buttons()
+		self.draw_buttons()
 
-		self.y_ob = self.height_window / 6
-		self.width_Obstacle = 50
-		self.height_Obstacle = 50
-		self.width_car = 100
-		self.time = [0 for i in range (5)]
-		self.start_ob = True
-		self.flag_ob = [True, True]
-		self.lane_ob = [0 for i in range(5)]
+		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
+		self.game.draw_text('Start Race', 35, self.game.WHITE, self.game.W // 6 + 220, self.game.H // 2 - 205, centery=False)
 
-	def draw_ob (self):
-		if self.start_ob:
-			self.move_ob()
+		self.game.draw_surface(self.thumbnails[self.qualities['Character set'][self.options['Character set']]])
 
-			pygame.draw.rect(self.game.window, self.game.RED, (self.pos_ob[0], self.y_ob * self.lane_ob[0], self.width_Obstacle, self.height_Obstacle))
-			pygame.draw.rect(self.game.window, self.game.RED, (self.pos_ob[1], self.y_ob * self.lane_ob[1], self.width_Obstacle, self.height_Obstacle))
+		count = 0
+		for i, v in self.options.items():
+			self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 6, self.game.H * 0.725 + 100 * (count - 1), centerx=False)
+			self.game.draw_text(self.qualities[i][v], 35, self.game.WHITE, self.game.W * 5 // 6 - 174, self.game.H * 0.725 + 100 * (count - 1))
+			count += 1
 
 
-	def range_ob (self):
-		self.pos_ob_temp = [self.width_window + 100 * i for i in range (1, 6)]
-		
-		shuffle(self.pos_ob_temp)
+class ShopScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
-		self.pos_ob = self.pos_ob_temp[:]
+		self.thumbnails = self.game.thumbnails_assets
+		self.buttons_assets = self.game.buttons_assets
 
-		self.lane_ob_temp = [1, 2, 3, 4, 5]
+		self.qualities = {
+			'Item' : ['Amulet', 'Endurance', 'Strength', 'Swiftness'],
+		}
 
-		shuffle(self.lane_ob_temp)
+		self.options = {
+			'Item' : self.game.ACCOUNT['Item'],
+		}
 
-		self.lane_ob = self.lane_ob_temp[:]
+		self.descriptions = {
+			'Amulet' : 'You can bet your all on this',
+			'Endurance' : 'You have high hazard affinity',
+			'Strength' : 'You are an experienced combatant',
+			'Swiftness' : 'You overdosed on sugar this morning',
+		}
 
-		return self.pos_ob[2], self.lane_ob[2], self.lane_ob
+		self.costs = {
+			'Amulet' : 5000,
+			'Endurance' : 1000,
+			'Strength' : 2000,
+			'Swiftness' : 3000,
+		}
 
-	def Speed_ob(self):
-		self.speed_ob = 1.5
+		for v in self.qualities['Item']:
+			self.thumbnails[v].resize(self.game.H // 2.25, self.game.H // 2.25)
+			self.thumbnails[v].position(self.game.W * 5 // 6 - 174 - self.game.H // 4.5, self.game.H * 0.281 - 155)
 
+		self.buttons['Purchase'] = Button(
+			Surface(self.buttons_assets['Bottom'].image), Surface(self.buttons_assets['Purchase'].image)
+		)
 
-	def move_ob(self):
-		self.Speed_ob()
+		self.buttons['Purchase'].resize(self.game.W // 5, self.game.H // 6)
+		self.buttons['Purchase'].position(self.game.W // 6 + 220 - self.game.W // 10, self.game.H // 2 - 155)
 
-		self.pos_ob[0] -= self.speed_ob
-		self.pos_ob[1] -= self.speed_ob
+		count = 0
+		for i, v in self.options.items():
+			self.buttons[i + 'Left'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+			self.buttons[i + 'Right'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
 
-		if self.pos_ob[0] <= 0 and self.pos_ob[1] <= 0:
-			self.range_ob()
+			self.buttons[i + 'Left'].position(self.game.W * 5 // 6 - 442, self.game.H * 0.725 + 100 * (count - 1) - 40)
+			self.buttons[i + 'Right'].position(self.game.W * 5 // 6, self.game.H * 0.725 + 100 * (count - 1) - 40)
+			count += 1
 
-		# ob 1
-		if self.flag_ob[0]:
-			if abs(self.pos_ob[0] - self.cars[self.lane_ob[0] - 1][0] - self.width_car) <= 5:
-				self.time[0] = pygame.time.get_ticks()
 
-				self.speed_cars[self.lane_ob[0] - 1] = -1
-			
-			if pygame.time.get_ticks() - self.time[0] >= 100:
-				self.speed_cars[self.lane_ob[0] - 1] = self.speed_cars_temp[self.lane_ob[0] - 1]
-		
-		# ob 2
-		if self.flag_ob[1]:
-			if abs(self.pos_ob[1] - self.cars[self.lane_ob[1] - 1][0] - self.width_car) <= 5:
-				self.time[1] = pygame.time.get_ticks()
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
+			true_down_button_name = self.down_button_name.replace('Left', '').replace('Right', '')
 
-				self.speed_cars[self.lane_ob[1] - 1] = -1
-			
-			if pygame.time.get_ticks() - self.time[1] >= 100:
-				self.speed_cars[self.lane_ob[1] - 1] = self.speed_cars_temp[self.lane_ob[1] - 1]
-		
-		# start
-		flag  = False
-		for i in range (5):
-			if self.cars[i][0] >=self.finish_line:
-				flag = True
-		if flag:
-			self.start_ob = False
-				
-		
-class Point(MainGameScene):
-	def __init__(self, game, parent, title, speed_cars, cars):
-		super().__init__(game, parent, title)
-		self.speed_cars = speed_cars
-		self.cars = cars
-		self.width_car = 100
-
-		self.y_po = self.height_window / 6
-		self.width_Point = 50
-		self.height_Point = 50
-		self.time = [0 for i in range (5)]
-		self.start_po = True
-		self.count_po = [0 for i in range (5)]
-
-		self.Obstacle = Obstacle(self.game, self.parent, self.title, self.speed_cars, self.cars)
-		self.pos_po  = self.Obstacle.range_ob()[0]
-		self.lane_po = self.Obstacle.range_ob()[1]
-
-	def draw_po (self):
-		if self.start_po:
-			self.move_po()
-			pygame.draw.rect(self.game.window, (255, 215, 0), (self.pos_po, self.y_po * self.lane_po, self.width_Point, self.height_Point))
-	
-
-	def Speed_po(self):
-		self.speed_po = 1.5
-
-
-	def move_po(self):
-		self.Speed_po()
-		self.pos_po -= self.speed_po
-
-		if self.pos_po <= 0:
-			self.pos_po  = self.Obstacle.range_ob()[0]
-			self.lane_po = self.Obstacle.range_ob()[1]
-		
-		flag  = False
-		for i in range (5):
-			if self.cars[i][0] >= self.finish_line and self.pos_po < self.cars[i][0]:
-				flag = True
-		if flag:
-			self.start_po = False
-		
-		if abs(self.pos_po - self.cars[self.lane_po - 1][0] - self.width_car) <= 5:
-			self.count_po[self.lane_po - 1] = 1
-		# print(self.count_po)
-		
-		return self.count_po
-		
-
-
-
-class Skill(MainGameScene):
-	def __init__(self, game, parent, title, speed_cars, cars, count_po):
-		super().__init__(game, parent, title)
-		self.speed_cars = speed_cars
-		self.speed_cars_temp = speed_cars[:]
-		self.cars = cars
-		self.count_po = count_po
-		self.Obstacle = Obstacle(self.game, self.parent, self.title, self.speed_cars, self.cars)
-		self.Car = Car(self.game, self.parent, self.title)
-		self.lane_ob =  self.Obstacle.range_ob()[2]
-
-		self.nv = 0
-		
-		self.flag = False
-		self.flag_skill = True
-
-		self.time_skill = [0 for i in range(5)]
-		self.rand_skill = randrange (0, 2)
-
-	
-	def range_skill(self):
-		self.lane_ob =  self.Obstacle.range_ob()[2]
-
-		for i in range (5):
-			if self.count_po[i] == 1:
-				self.flag = True
-				self.nv = i
-				self.count_po[self.nv] = 0
-
-		if self.flag:
-			self.skill_6()
-
-
-	# tat ca cham tru ban than
-	def skill_1 (self):
-		if self.flag_skill:
-			for i in range(5):
-				if i != self.nv:
-					self.speed_cars[i] = -1
-					self.time_skill[0] = pygame.time.get_ticks()
-					self.flag_skill = False
-
-		if pygame.time.get_ticks() - self.time_skill[0] >= 500:
-			for i in range(5):
-				self.speed_cars[i] = self.speed_cars_temp[i]
-			self.nv = 0
-			self.flag = False
-			self.flag_skill = True
-
-
-	# Tang toc ban than
-	def skill_2(self):
-		if self.flag_skill:
-			for i in range(5):
-				if i == self.nv:
-					self.speed_cars[i] *= 2
-					self.time_skill[1] = pygame.time.get_ticks()
-					self.flag_skill = False
-
-		if pygame.time.get_ticks() - self.time_skill[1] >= 500:
-			for i in range(5):
-				self.speed_cars[i] = self.speed_cars_temp[i]
-			self.nv = 0
-			self.flag = False
-			self.flag_skill = True
-	
+			if self.down_button_name == 'Purchase':
+				if self.costs[self.qualities['Item'][self.options['Item']]] <= self.game.ACCOUNT['Money']:
+					self.game.ACCOUNT['Items'][self.qualities['Item'][self.options['Item']]] += 1
+					self.game.ACCOUNT['Money'] -= self.costs[self.qualities['Item'][self.options['Item']]]
+				else:
+					pass
 
-	# tranh hieu ung !loi
-	def skill_3 (self):
-		if self.flag_skill:
-			if self.nv == self.lane_ob[0]:
-					self.Obstacle.flag_ob[0] = False
-					self.time_skill[2] = pygame.time.get_ticks()
-					self.flag_skill = False
+				return
 
-			elif self.nv == self.lane_ob[1]:
-				self.Obstacle.flag_ob[1] = False
-				self.time_skill[2] = pygame.time.get_ticks()
-				self.flag_skill = False
+			if 'Left' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] - 1) % len(self.qualities[true_down_button_name])
+			elif 'Right' in self.down_button_name:
+				self.options[true_down_button_name] = (self.options[true_down_button_name] + 1) % len(self.qualities[true_down_button_name])
 
-		if pygame.time.get_ticks() - self.time_skill[2] >= 500:
-			self.Obstacle.flag_ob[0] = True
-			self.Obstacle.flag_ob[1] = True
-			self.nv = 0
-			self.flag = False
-			self.flag_skill = True
+			if true_down_button_name == 'Item':
+				self.game.ACCOUNT['Item'] = self.options[true_down_button_name]
 
 
-# Teleport
-	def skill_4(self):
-		if self.flag_skill:
-				self.cars[self.nv][0] += 100
-				self.time_skill[1] = pygame.time.get_ticks()
-				self.flag_skill = False
+	def draw_options(self):
+		self.draw_menu_buttons()
+		self.draw_buttons()
 
-		if pygame.time.get_ticks() - self.time_skill[1] >= 10:
-			self.nv = 0
-			self.flag = False
-			self.flag_skill = True
+		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
-# tia chop
-	def skill_5 (self):
-		if self.flag_skill:
-			for i in range(5):
-				if i != self.nv:
-					self.speed_cars[i] = 0
-					self.time_skill[0] = pygame.time.get_ticks()
-					self.flag_skill = False
-					# Can surface. self.game.window de ve
-					# pygame.draw.rect(self.game.window, (255, 215, 0), (0, self.width_window / 6 * i, 10, 10))
+		self.game.draw_text(
+			f'Your money {self.game.ACCOUNT["Money"]}',
+			25, self.game.WHITE, self.game.W // 6 + 220,  self.game.H * 0.281 - 155, centery=False
+		)
+		self.game.draw_text(
+			'You have ' + str(self.game.ACCOUNT['Items'][self.qualities['Item'][self.options['Item']]]),
+			25, self.game.WHITE, self.game.W // 6 + 220,  self.game.H // 2 - 135 + self.game.H // 6, centery=False
+		)
+		self.game.draw_text(
+			'Buy for ' + str(self.costs[self.qualities['Item'][self.options['Item']]]),
+			35, self.game.WHITE, self.game.W // 6 + 220, self.game.H // 2 - 205, centery=False
+		)
 
-		if pygame.time.get_ticks() - self.time_skill[0] >= 1000:
-			for i in range(5):
-				self.speed_cars[i] = self.speed_cars_temp[i]
-			self.nv = 0
-			self.flag = False
-			self.flag_skill = True
+		self.game.draw_text(
+			self.descriptions[self.qualities['Item'][self.options['Item']]],
+			25, self.game.WHITE, self.game.W * 5 // 6 - 174, self.game.H * 0.725
+		)
 
-# choang bat ki
-	def skill_6 (self):
-		if self.flag_skill:
-			while True:
-				rand_nv = randrange(0, 4)
-				if rand_nv != self.nv:
-					break
-				
-			self.speed_cars[rand_nv] = -1
-			self.time_skill[0] = pygame.time.get_ticks()
-			self.flag_skill = False
+		self.game.draw_surface(self.thumbnails[self.qualities['Item'][self.options['Item']]])
 
-		if pygame.time.get_ticks() - self.time_skill[0] >= 500:
-			for i in range(5):
-				self.speed_cars[i] = self.speed_cars_temp[i]
-			self.nv = 0
-			self.flag = False
-			self.flag_skill = True
+		count = 0
+		for i, v in self.options.items():
+			self.game.draw_text(self.qualities[i][v], 35, self.game.WHITE, self.game.W * 5 // 6 - 174, self.game.H * 0.725 + 100 * (count - 1))
+			count += 1
 
-	
-		
-	
 
-		
+class AccountsScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
-						
-		
-		
-		
+		self.buttons = {}
+		offset = self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 155).w // 2
 
-		
+		for i, v in self.game.ACCOUNTS.items():
+			if i != self.game.ACCOUNT['Name']:
+				offset = max(offset, self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 2, self.game.H // 2).w // 2)
 
-			
+		count = 0
+		for i, v in self.game.ACCOUNTS.items():
+			if i != self.game.ACCOUNT['Name']:
+				self.buttons[i] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
+				self.buttons[i].position(self.game.W // 2 - 100 - offset, self.game.H * 0.281 - 155 + 185 - 40 + 100 * count)
+				count += 1
 
 
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
+			self.game.switch_scene(self.title, 'Login', self.down_button_name)
+			return
 
 
+	def draw_options(self):
+		self.draw_menu_buttons()
+		self.draw_buttons()
 
+		self.game.draw_text(self.title, 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
 
+		self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 155)
+		self.game.draw_text(self.game.ACCOUNT['Name'], 35, self.game.WHITE, self.game.W // 2, self.game.H * 0.281 - 155 + 60)
+		self.game.draw_text('Change Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 155 + 120)
 
+		count = 0
+		for i, v in self.game.ACCOUNTS.items():
+			if i != self.game.ACCOUNT['Name']:
+				self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 2, self.game.H * 0.281 - 155 + 185 + 100 * count)
+				count += 1
 
 
+class EscapeScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
 
-		
 
+	def draw_options(self):
+		self.game.running = False
+		self.game.export_data()
 
+		for i, v in self.game.scenes.items():
+			v.running = False
