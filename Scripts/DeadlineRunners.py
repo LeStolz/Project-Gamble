@@ -8,8 +8,7 @@ class DeadlineRunnersGameScene(GameScene):
 	def __init__(self, game, title):
 		GameScene.__init__(self, game, title)
 
-		self.width_window, self.height_window = pygame.display.get_surface().get_size()
-		self.finish_line = self.width_window - 150
+		self.finish_line = self.game.W - 150
 
 
 	def draw_scene(self):
@@ -35,8 +34,6 @@ class DeadlineRunnersGameScene(GameScene):
 			self.game.display.fill(self.game.BLACK)
 			self.game.window.blit(self.game.display, (0, 0))
 
-			self.width_window, self.height_window = pygame.display.get_surface().get_size()
-
 			self.Background.draw_bg()
 
 			for n in range (5):
@@ -57,9 +54,8 @@ class Car(DeadlineRunnersScene):
 	def __init__(self, game, title):
 		DeadlineRunnersScene.__init__(self, game, title)
 		self.width_car, self.height_car = 100, 50
-		self.width_window, self.height_window = pygame.display.get_surface().get_size()
-		self.finish_line = self.width_window - 150
-		self.cars = [[0, self.height_window / 6 * x] for x in range(1,6)]
+		self.finish_line = self.game.W - 150
+		self.cars = [[0, self.game.H / 6 * x] for x in range(1,6)]
 		self.flag_draw_car = [True for i in range (5)]
 
 
@@ -91,8 +87,7 @@ class Background(DeadlineRunnersScene):
 		self.speed_cars_temp = [speed_cars[i] + 1 for i in range (5)]
 		self.cars = cars
 		self.pos_bg = 0
-		self.width_window, self.height_window = pygame.display.get_surface().get_size()
-		self.finish_line = self.width_window - 150
+		self.finish_line = self.game.W - 150
 		self.BG = pygame.transform.scale(self.game.deadline_runners_assets['Background'].image, (self.game.W, self.game.H))
 		self.BG = pygame.transform.scale(self.BG, (10000, 720))
 		self.width_bg = self.BG.get_width()
@@ -131,9 +126,8 @@ class Obstacle(DeadlineRunnersScene):
 		self.speed_cars = speed_cars
 		self.speed_cars_temp = speed_cars[:]
 		self.cars = cars
-		self.width_window, self.height_window = pygame.display.get_surface().get_size()
-		self.finish_line = self.width_window - 150
-		self.y_ob = self.height_window / 6
+		self.finish_line = self.game.W - 150
+		self.y_ob = self.game.H / 6
 		self.width_Obstacle = 50
 		self.height_Obstacle = 50
 		self.width_car = 100
@@ -152,7 +146,7 @@ class Obstacle(DeadlineRunnersScene):
 
 
 	def range_ob (self):
-		self.pos_ob_temp = [self.width_window + 100 * i for i in range (1, 6)]
+		self.pos_ob_temp = [self.game.W + 100 * i for i in range (1, 6)]
 
 		shuffle(self.pos_ob_temp)
 
@@ -214,9 +208,8 @@ class Point(DeadlineRunnersScene):
 		self.speed_cars = speed_cars
 		self.cars = cars
 		self.width_car = 100
-		self.width_window, self.height_window = pygame.display.get_surface().get_size()
-		self.finish_line = self.width_window - 150
-		self.y_po = self.height_window / 6
+		self.finish_line = self.game.W - 150
+		self.y_po = self.game.H / 6
 		self.width_Point = 50
 		self.height_Point = 50
 		self.time = [0 for i in range (5)]
@@ -268,8 +261,7 @@ class Skill(DeadlineRunnersScene):
 		self.speed_cars_temp = speed_cars[:]
 		self.cars = cars
 		self.count_po = count_po
-		self.width_window, self.height_window = pygame.display.get_surface().get_size()
-		self.finish_line = self.width_window - 150
+		self.finish_line = self.game.W - 150
 		self.Obstacle = Obstacle(self.game, self.title, self.speed_cars, self.cars)
 		self.Car = Car(self.game, self.title)
 		self.lane_ob =  self.Obstacle.range_ob()[2]
@@ -371,8 +363,6 @@ class Skill(DeadlineRunnersScene):
 					self.speed_cars[i] = 0
 					self.time_skill[0] = pygame.time.get_ticks()
 					self.flag_skill = False
-					# Can surface. self.game.window de ve
-					# pygame.draw.rect(self.game.window, (255, 215, 0), (0, self.width_window / 6 * i, 10, 10))
 
 		if pygame.time.get_ticks() - self.time_skill[0] >= 1000:
 			for i in range(5):
