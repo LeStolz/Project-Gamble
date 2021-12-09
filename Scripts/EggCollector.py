@@ -182,9 +182,9 @@ class EggCollectorGameScene(GameScene):
 	def __init__(self, game, title):
 		GameScene.__init__(self, game, title)
 
-		self.hit_sound = pygame.mixer.Sound(self.game.space_invader_sfx['Hit'])
+		self.hit_sound = pygame.mixer.Sound(self.game.egg_collector_sfx['Hit'])
 
-		self.BACKGROUND = pygame.transform.scale(self.game.space_invader_assets['Background'].image, (self.game.W, self.game.H))
+		self.BACKGROUND = pygame.transform.scale(self.game.egg_collector_assets['Background'].image, (self.game.W, self.game.H))
 
 		self.num_shit = 0
 
