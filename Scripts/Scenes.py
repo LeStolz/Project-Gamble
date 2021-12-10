@@ -12,6 +12,7 @@ class Scene:
 		self.running = False
 
 		self.buttons_assets = self.game.buttons_assets
+		self.background = self.game.deadline_runners_assets['Aquatica']
 
 		self.menu_buttons = {
 			'Settings' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Settings']),
@@ -125,7 +126,7 @@ class Scene:
 		self.game.reset_input()
 
 		while self.running:
-			self.game.display.fill(self.game.BLACK)
+			self.game.draw_surface(self.background)
 
 			self.draw_options()
 
@@ -151,7 +152,7 @@ class GameScene(Scene):
 
 
 	def check_button_input(self):
-		if self.down_button_name in self.buttons.keys() and not self.finished and self.game.M_DOWN:
+		if self.down_button_name in self.buttons.keys() and self.down_button_name == 'Back' and not self.finished and self.game.M_DOWN:
 			self.lives = 0
 			self.back = True
 			self.finished = True
@@ -160,9 +161,14 @@ class GameScene(Scene):
 
 	def reset_game(self):
 		self.finished = True
+		self.lives = 0
 
 		self.game.draw_text('Game over', 65, self.game.GREEN, self.game.W // 2, self.game.H // 3 - 65)
-		self.game.draw_text(f'You earned {self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 15)
+		if self.score >= 0:
+			self.game.draw_text(f'You earned {self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 15)
+		else:
+			self.game.draw_text(f'You lost {-self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 15)
+
 		self.game.draw_text(f'Your money {self.game.ACCOUNT["Money"] + self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 65)
 
 		if pygame.time.get_ticks() - self.start_time < 650:
@@ -191,7 +197,10 @@ class GameScene(Scene):
 		while self.running:
 			self.draw_options()
 
-			self.draw_buttons()
+			if self.title == 'Deadline Runners Game':
+				self.game.reset_input()
+			else:
+				self.draw_buttons()
 
 			self.game.game_loop()
 
@@ -201,6 +210,9 @@ class OpeningScene(Scene):
 		Scene.__init__(self, game, title)
 
 		self.start_time = pygame.time.get_ticks()
+
+		self.game.draw_surface(self.background)
+		self.game.draw_text('Deadline Runners', 65, self.game.RED, self.game.W // 2, self.game.H // 3 - 65)
 
 
 	def draw_options(self):
@@ -225,6 +237,11 @@ class LoginScene(Scene):
 	def __init__(self, game, title):
 		Scene.__init__(self, game, title)
 
+		self.buttons['Back'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+
+		self.buttons['Back'].resize(55, 55)
+		self.buttons['Back'].position(0, 0)
+
 		self.username = self.TextBox(
 			self.game.username,
 			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 18, self.game.W * 4 // 6 - 310, 40, self.game.GREY, centerx=False)
@@ -233,14 +250,21 @@ class LoginScene(Scene):
 			'',
 			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 68, self.game.W * 4 // 6 - 310, 40, self.game.GREY, centerx=False)
 		)
-		self.game.display.fill(self.game.BLACK)
+		self.game.draw_surface(self.background)
 
 		self.selected = self.username
 
 		self.start_time = pygame.time.get_ticks()
 
 
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and self.down_button_name == 'Back' and self.game.M_DOWN:
+			self.game.switch_scene(self.title, self.game.old_scene)
+
+
 	def draw_options(self):
+		self.draw_buttons()
+
 		if pygame.time.get_ticks() - self.start_time < 650:
 			self.game.draw_text('Click to continue', 35, self.game.WHITE, self.game.W // 2, self.game.H * 3 // 4, centery=False)
 		elif pygame.time.get_ticks() - self.start_time > 650 * 2:
@@ -295,6 +319,35 @@ class LoginScene(Scene):
 				self.game.switch_scene(self.title, 'Accounts')
 		else:
 			pass
+
+
+class HistoryScene(Scene):
+	def __init__(self, game, title):
+		Scene.__init__(self, game, title)
+
+		self.buttons['Back'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowLeft'].image))
+
+		self.buttons['Back'].resize(55, 55)
+		self.buttons['Back'].position(0, 0)
+
+
+	def check_button_input(self):
+		if self.down_button_name in self.buttons.keys() and self.down_button_name == 'Back' and self.game.M_DOWN:
+			self.game.switch_scene(self.title, self.game.old_scene)
+
+
+	def draw_options(self):
+		self.draw_buttons()
+
+		self.game.draw_text('Gambling History', 45, self.game.GREEN, self.game.W // 2, 0, centery=False)
+
+		count = 0
+		for v in self.game.ACCOUNT['Races']:
+			if 'Earned' in v:
+				self.game.draw_text(v, 35, self.game.GREEN, self.game.W // 2, self.game.H // 6 + 65 * count, secondary_font=True)
+			else:
+				self.game.draw_text(v, 35, self.game.RED, self.game.W // 2, self.game.H // 6 + 65 * count, secondary_font=True)
+			count += 1
 
 
 class RewardScene(Scene):
@@ -428,7 +481,7 @@ class DeadlineRunnersScene(Scene):
 		self.buttons_assets = self.game.buttons_assets
 
 		self.qualities = {
-			'Character set' : ['Chivalry', 'Deadliners', 'Fantasy', 'Aquatica', 'Divinity'],
+			'Character set' : ['Chivalry', 'Deadliners', 'Aquatica'],
 			'Track length' : ['Short', 'Medium', 'Long'],
 		}
 
@@ -463,6 +516,7 @@ class DeadlineRunnersScene(Scene):
 			true_down_button_name = self.down_button_name.replace('Left', '').replace('Right', '')
 
 			if self.down_button_name == 'Deadline Runners Game':
+				self.game.scenes[self.down_button_name].__init__(self.game, self.down_button_name)
 				self.game.switch_scene(self.title, self.down_button_name)
 				return
 
@@ -615,14 +669,19 @@ class AccountsScene(Scene):
 				self.buttons[i] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['ArrowRight'].image))
 				self.buttons[i].position(self.game.W // 2 - 100 - offset, self.game.H * 0.281 - 142 + 185 - 40 + 100 * count)
 				count += 1
+			else:
+				self.buttons['History'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['History'].image))
+				self.buttons['History'].position(self.game.W // 2 - 100 - offset, self.game.H * 0.281 - 142 + 60 - 40)
 
-		self.game.display.fill(self.game.BLACK)
+		self.game.draw_surface(self.background)
 
 
 	def check_button_input(self):
 		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
-			self.game.switch_scene(self.title, 'Login', self.down_button_name)
-			return
+			if self.down_button_name == 'History':
+				self.game.switch_scene(self.title, 'History')
+			else:
+				self.game.switch_scene(self.title, 'Login', self.down_button_name)
 
 
 	def draw_options(self):
@@ -649,6 +708,11 @@ class EscapeScene(Scene):
 
 	def draw_options(self):
 		self.game.running = False
+
+		self.game.ACCOUNT['Money'] += self.game.scenes['Deadline Runners Game'].score
+		self.game.ACCOUNT['Money'] += self.game.scenes['Egg Collector Game'].score
+		self.game.ACCOUNT['Money'] += self.game.scenes['Space Invader Game'].score
+
 		self.game.export_data()
 
 		for i, v in self.game.scenes.items():

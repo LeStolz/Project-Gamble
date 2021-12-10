@@ -31,6 +31,7 @@ class Game:
 		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
 		self.display = pygame.Surface((self.W, self.H))
 		self.font_name = self.DIRECTORY + 'Assets\\Sprites\\Font.ttf'
+		self.secondary_font_name = self.DIRECTORY + 'Assets\\Sprites\\SecondaryFont.ttf'
 		self.clock = pygame.time.Clock()
 		self.running = True
 
@@ -60,10 +61,12 @@ class Game:
 			'Deadline Runners Game' : DeadlineRunnersGameScene(self, 'Deadline Runners Game'),
 			'Shop' : ShopScene(self, 'Shop'),
 			'Accounts' : AccountsScene(self, 'Accounts'),
+			'History' : HistoryScene(self, 'History'),
 			'Egg Collector Game' : EggCollectorGameScene(self, 'Egg Collector Game'),
 			'Space Invader Game' : SpaceInvaderGameScene(self, 'Space Invader Game'),
 			'Escape' : EscapeScene(self, 'Escape'),
 		}
+		self.old_scene = 'Opening'
 		self.current_scene = self.scenes['Opening']
 
 
@@ -92,6 +95,12 @@ class Game:
 			self.ACCOUNTS[account]['Items']['Strength'] = int(account_data_file.readline().rstrip('\n'))
 			self.ACCOUNTS[account]['Items']['Swiftness'] = int(account_data_file.readline().rstrip('\n'))
 			self.ACCOUNTS[account]['Previous session'] = str(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Race Number'] = int(account_data_file.readline().rstrip('\n'))
+			self.ACCOUNTS[account]['Races'] = []
+
+			for i in range(self.ACCOUNTS[account]['Race Number']):
+				self.ACCOUNTS[account]['Races'].append(str(account_data_file.readline().rstrip('\n')))
+
 			self.ACCOUNT = self.ACCOUNTS[account]
 			self.username = account
 
@@ -120,6 +129,10 @@ class Game:
 			account_data_file.write(str(self.ACCOUNTS[account]['Items']['Strength']) + '\n')
 			account_data_file.write(str(self.ACCOUNTS[account]['Items']['Swiftness']) + '\n')
 			account_data_file.write(str(self.ACCOUNTS[account]['Previous session']) + '\n')
+			account_data_file.write(str(self.ACCOUNTS[account]['Race Number']) + '\n')
+
+			for v in self.ACCOUNTS[account]['Races']:
+				account_data_file.write(str(v) + '\n')
 
 		account_data_file.close()
 
@@ -228,10 +241,14 @@ class Game:
 
 	def switch_scene(self, old_scene, new_scene, username=''):
 		self.scenes[old_scene].running = False
+		self.old_scene = old_scene
 		self.current_scene = self.scenes[new_scene]
+
 		if username != '':
 			self.username = username
 			self.scenes['Login'].__init__(self, 'Login')
+
+		self.reset_input()
 
 
 	def set_window_size(self):
@@ -252,8 +269,12 @@ class Game:
 			v.__init__(self, i)
 
 
-	def draw_text(self, text, text_size, text_color, x, y, centerx=True, centery=True, right=False):
-		font = pygame.font.Font(self.font_name, text_size)
+	def draw_text(self, text, text_size, text_color, x, y, centerx=True, centery=True, right=False, secondary_font=False):
+		if secondary_font:
+			font = pygame.font.Font(self.secondary_font_name, 2 * text_size)
+		else:
+			font = pygame.font.Font(self.font_name, text_size)
+
 		text_surface = font.render(text, False, text_color)
 
 		text_rect = text_surface.get_rect(x=x, y=y)
@@ -264,6 +285,14 @@ class Game:
 			text_rect.centery = y
 		if right:
 			text_rect.right = x
+
+		if text_color == self.GREEN or (text_color != self.BLACK and secondary_font):
+			self.draw_text(text, text_size, self.BLACK, x - 1, y, centerx, centery, right, secondary_font)
+			self.draw_text(text, text_size, self.BLACK, x + 1, y, centerx, centery, right, secondary_font)
+			self.draw_text(text, text_size, self.BLACK, x, y - 1, centerx, centery, right, secondary_font)
+			self.draw_text(text, text_size, self.BLACK, x, y + 1, centerx, centery, right, secondary_font)
+		if text_color == self.RED and not secondary_font:
+			self.draw_text(text, text_size, self.BLACK, x, y + 5, centerx, centery, right, secondary_font)
 
 		self.display.blit(text_surface, text_rect)
 
