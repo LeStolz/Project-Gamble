@@ -12,10 +12,17 @@ from DeadlineRunners import *
 class Game:
 	def __init__(self):
 		pygame.init()
-		pygame.mixer.init()
+		pygame.mixer.init(devicename='CABLE Input (VB-Audio Virtual Cable)')
 		pygame.display.set_caption('Deadline Runners')
+		pygame.event.set_allowed([
+			pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, pygame.MOUSEBUTTONUP, pygame.MOUSEBUTTONDOWN, pygame.VIDEORESIZE
+		])
 
-		self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '\\'
+		try:
+  			self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '\\'
+		except NameError:
+  			self.DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))) + '\\'
+
 		self.FPS = 60
 		self.BLACK, self.GREY, self.WHITE, self.RED, self.GREEN, self.BLUE \
 			= (0, 0, 0), (200, 200, 200), (255, 255, 255), (244, 81, 30), (67, 160, 71), (3, 155, 229)
@@ -28,7 +35,7 @@ class Game:
 		self.WINSCREEN_W, self.WINSCREEN_H = 1280, 720
 		self.W, self.H = self.FULLSCREEN_W, self.FULLSCREEN_H
 
-		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
+		self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE | pygame.DOUBLEBUF)
 		self.display = pygame.Surface((self.W, self.H))
 		self.font_name = self.DIRECTORY + 'Assets\\Sprites\\Font.ttf'
 		self.secondary_font_name = self.DIRECTORY + 'Assets\\Sprites\\SecondaryFont.ttf'
@@ -49,7 +56,12 @@ class Game:
 
 		self.space_invader_sfx = {}
 		self.egg_collector_sfx = {}
+		self.menu_sfx = {}
+		self.deadline_runners_sfx = {}
 		self.import_sfx()
+
+		self.music = self.menu_sfx['Music']
+		self.music.play(-1)
 
 		self.scenes = {
 			'Opening' : OpeningScene(self, 'Opening'),
@@ -68,6 +80,7 @@ class Game:
 		}
 		self.old_scene = 'Opening'
 		self.current_scene = self.scenes['Opening']
+		self.set_sound_volume()
 
 
 	def import_data(self):
@@ -153,9 +166,9 @@ class Game:
 			name, extension = os.path.splitext(file)
 
 			if '.png' in extension:
-				assets[name] = Surface(pygame.image.load(self.resource_path(self.DIRECTORY + directory + file)))
-			elif '.mp3' in extension:
-				assets[name] = self.resource_path(self.DIRECTORY + directory + file)
+				assets[name] = Surface(pygame.image.load(self.resource_path(self.DIRECTORY + directory + file)).convert_alpha())
+			elif '.mp3' in extension or '.wav' in extension:
+				assets[name] = pygame.mixer.Sound(self.resource_path(self.DIRECTORY + directory + file))
 
 		return assets
 
@@ -171,6 +184,8 @@ class Game:
 	def import_sfx(self):
 		self.space_invader_sfx = self.import_assets_from_directory('Assets\\Sfx\\SpaceInvader\\')
 		self.egg_collector_sfx = self.import_assets_from_directory('Assets\\Sfx\\EggCollector\\')
+		self.menu_sfx = self.import_assets_from_directory('Assets\\Sfx\\Menu\\')
+		self.deadline_runners_sfx = self.import_assets_from_directory('Assets\\Sfx\\Deadliners\\')
 
 
 	def check_input(self):
@@ -254,13 +269,13 @@ class Game:
 	def set_window_size(self):
 		if self.ACCOUNT['Resolution']:
 			self.W, self.H = self.FULLSCREEN_W, self.FULLSCREEN_H
-			self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE)
+			self.window = pygame.display.set_mode((self.W, self.H), pygame.FULLSCREEN | pygame.RESIZABLE | pygame.DOUBLEBUF)
 		else:
 			if self.W == self.FULLSCREEN_W and self.H == self.FULLSCREEN_H:
 				self.W, self.H = self.WINSCREEN_W, self.WINSCREEN_H
 			else:
 				self.W, self.H = self.window.get_size()
-			self.window = pygame.display.set_mode((self.W, self.H), pygame.RESIZABLE)
+			self.window = pygame.display.set_mode((self.W, self.H), pygame.RESIZABLE | pygame.DOUBLEBUF)
 
 		self.display = pygame.Surface((self.W, self.H))
 
@@ -269,7 +284,19 @@ class Game:
 			v.__init__(self, i)
 
 
-	def draw_text(self, text, text_size, text_color, x, y, centerx=True, centery=True, right=False, secondary_font=False):
+	def set_sound_volume(self):
+		for v in self.space_invader_sfx.values():
+			v.set_volume(self.ACCOUNT['Sound'] * 0.5)
+		for v in self.egg_collector_sfx.values():
+			v.set_volume(self.ACCOUNT['Sound'] * 0.5)
+		for v in self.menu_sfx.values():
+			v.set_volume(self.ACCOUNT['Sound'] * 0.5)
+		for v in self.deadline_runners_sfx.values():
+			v.set_volume(self.ACCOUNT['Sound'] * 0.5)
+
+
+	def draw_text(self, text, text_size, text_color, x, y, \
+		centerx=True, centery=True, right=False, secondary_font=False, outline=True, no_draw=False):
 		if secondary_font:
 			font = pygame.font.Font(self.secondary_font_name, 2 * text_size)
 		else:
@@ -286,20 +313,23 @@ class Game:
 		if right:
 			text_rect.right = x
 
-		if text_color == self.GREEN or (text_color != self.BLACK and secondary_font):
-			self.draw_text(text, text_size, self.BLACK, x - 1, y, centerx, centery, right, secondary_font)
-			self.draw_text(text, text_size, self.BLACK, x + 1, y, centerx, centery, right, secondary_font)
-			self.draw_text(text, text_size, self.BLACK, x, y - 1, centerx, centery, right, secondary_font)
-			self.draw_text(text, text_size, self.BLACK, x, y + 1, centerx, centery, right, secondary_font)
-		if text_color == self.RED and not secondary_font:
-			self.draw_text(text, text_size, self.BLACK, x, y + 5, centerx, centery, right, secondary_font)
+		if no_draw:
+			return text_rect
+
+		if outline and text_color != self.BLACK and text_color != self.WHITE and text_size < 60:
+			self.draw_text(text, text_size, self.BLACK, x - 1, y, centerx, centery, right, secondary_font, outline, no_draw)
+			self.draw_text(text, text_size, self.BLACK, x + 1, y, centerx, centery, right, secondary_font, outline, no_draw)
+			self.draw_text(text, text_size, self.BLACK, x, y - 1, centerx, centery, right, secondary_font, outline, no_draw)
+			self.draw_text(text, text_size, self.BLACK, x, y + 1, centerx, centery, right, secondary_font, outline, no_draw)
+		elif outline and text_color != self.BLACK and text_color != self.WHITE and text_size >= 60:
+			self.draw_text(text, text_size, self.BLACK, x, y + 5, centerx, centery, right, secondary_font, outline, no_draw)
 
 		self.display.blit(text_surface, text_rect)
 
 		return text_rect
 
 
-	def draw_rect(self, x=-1, y=-1, w=-1, h=-1, rect_color=-1, centerx=True, centery=True, right=False, rect=-1):
+	def draw_rect(self, x=-1, y=-1, w=-1, h=-1, rect_color=-1, centerx=True, centery=True, right=False, rect=-1, no_draw=False):
 		if rect == -1:
 			rect = pygame.Rect(x, y, w, h)
 
@@ -309,6 +339,9 @@ class Game:
 				rect.centery = y
 			if right:
 				text_rect.right = x
+
+		if no_draw:
+			return rect
 
 		pygame.draw.rect(self.display, rect_color, rect)
 

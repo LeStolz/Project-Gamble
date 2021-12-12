@@ -13,6 +13,7 @@ class Scene:
 
 		self.buttons_assets = self.game.buttons_assets
 		self.background = self.game.deadline_runners_assets['Aquatica']
+		self.background.resize(self.game.W, self.game.H)
 
 		self.menu_buttons = {
 			'Settings' : Button(Surface(self.buttons_assets['Bottom'].image), self.buttons_assets['Settings']),
@@ -39,6 +40,11 @@ class Scene:
 		self.menu_buttons['Escape'].resize(55, 55)
 		self.menu_buttons['Escape'].position(self.game.W - 55, 0)
 
+		self.last_menu_button_state = 'None'
+		self.last_menu_button_name = 'None'
+		self.last_button_state = 'None'
+		self.last_button_name = 'None'
+
 
 	def draw_menu_buttons(self):
 		self.check_menu_button_names()
@@ -62,17 +68,31 @@ class Scene:
 	def check_menu_button_names(self):
 		self.hover_menu_button_name = ''
 
+		touched_button = False
+
 		for i, v in self.menu_buttons.items():
 			if v.top.rect.collidepoint(pygame.mouse.get_pos()):
+				touched_button = True
 				self.hover_menu_button_name = i
+				if self.last_menu_button_state != 'Hover' or self.last_menu_button_name != i:
+					self.last_menu_button_state = 'Hover'
+					self.last_menu_button_name = i
+					self.game.menu_sfx['ButtonDown'].play()
 				break
+
+		if not touched_button:
+			self.last_menu_button_name = 'None'
 
 		if self.game.M_UP and self.down_menu_button_name != '':
 			self.up_menu_button_name = self.down_menu_button_name
 			self.down_menu_button_name = ''
+			self.last_menu_button_state = 'Up'
+			self.last_menu_button_name = self.down_menu_button_name
 		elif self.game.M_DOWN and self.hover_menu_button_name != '':
 			self.down_menu_button_name = self.hover_menu_button_name
 			self.hover_menu_button_name = ''
+			self.last_menu_button_state = 'Down'
+			self.last_menu_button_name = self.hover_menu_button_name
 
 
 	def check_menu_button_input(self):
@@ -98,17 +118,31 @@ class Scene:
 	def check_button_names(self):
 		self.hover_button_name = ''
 
+		touched_button = False
+
 		for i, v in self.buttons.items():
 			if v.top.rect.collidepoint(pygame.mouse.get_pos()):
+				touched_button = True
 				self.hover_button_name = i
+				if self.last_button_state != 'Hover' or self.last_button_name != i:
+					self.last_button_state = 'Hover'
+					self.last_button_name = i
+					self.game.menu_sfx['ButtonDown'].play()
 				break
+
+		if not touched_button:
+			self.last_button_name = 'None'
 
 		if self.game.M_UP and self.down_button_name != '':
 			self.hover_button_name = self.down_button_name
 			self.down_button_name = ''
+			self.last_button_state = 'Up'
+			self.last_button_name = self.down_button_name
 		elif self.game.M_DOWN and self.hover_button_name != '':
 			self.down_button_name = self.hover_button_name
 			self.hover_button_name = ''
+			self.last_button_state = 'Down'
+			self.last_button_name = self.hover_button_name
 
 
 	def check_button_input(self):
@@ -147,6 +181,7 @@ class GameScene(Scene):
 		self.lives = 5
 		self.back = False
 		self.finished = False
+		self.played = False
 
 		self.start_time = pygame.time.get_ticks()
 
@@ -166,8 +201,14 @@ class GameScene(Scene):
 		self.game.draw_text('Game over', 65, self.game.GREEN, self.game.W // 2, self.game.H // 3 - 65)
 		if self.score >= 0:
 			self.game.draw_text(f'You earned {self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 15)
+			if not self.played and self.score > 0:
+				self.game.menu_sfx['Earned'].play()
+				self.played = True
 		else:
 			self.game.draw_text(f'You lost {-self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 15)
+			if not self.played:
+				self.game.menu_sfx['Lost'].play()
+				self.played = True
 
 		self.game.draw_text(f'Your money {self.game.ACCOUNT["Money"] + self.score}', 35, self.game.WHITE, self.game.W // 2, self.game.H // 3 + 65)
 
@@ -177,11 +218,17 @@ class GameScene(Scene):
 			self.start_time = pygame.time.get_ticks()
 
 		if self.game.M_DOWN:
+			self.played = False
+
 			if self.back:
 				if self.title == 'Deadline Runners Game':
 					self.game.switch_scene(self.title, 'Deadline Runners')
 				else:
 					self.game.switch_scene(self.title, 'Minigame')
+
+				self.game.music.stop()
+				self.game.music = self.game.menu_sfx['Music']
+				self.game.music.play(-1)
 
 			self.game.ACCOUNT['Money'] += self.score
 			self.__init__(self.game, self.title)
@@ -244,13 +291,14 @@ class LoginScene(Scene):
 
 		self.username = self.TextBox(
 			self.game.username,
-			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 18, self.game.W * 4 // 6 - 310, 40, self.game.GREY, centerx=False)
+			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 18, self.game.W * 4 // 6 - 310, 40, self.game.GREY,
+			centerx=False, no_draw=True)
 		)
 		self.password = self.TextBox(
 			'',
-			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 68, self.game.W * 4 // 6 - 310, 40, self.game.GREY, centerx=False)
+			self.game.draw_rect(self.game.W // 6 + 310, self.game.H // 3 + 68, self.game.W * 4 // 6 - 310, 40, self.game.GREY,
+			centerx=False, no_draw=True)
 		)
-		self.game.draw_surface(self.background)
 
 		self.selected = self.username
 
@@ -421,6 +469,7 @@ class SettingsScene(Scene):
 				self.game.ACCOUNT['Graphic'] = self.options[true_down_button_name]
 			elif true_down_button_name == 'Sound':
 				self.game.ACCOUNT['Sound'] = self.options[true_down_button_name]
+				self.game.set_sound_volume()
 
 
 	def draw_options(self):
@@ -457,6 +506,14 @@ class MinigameScene(Scene):
 
 	def check_button_input(self):
 		if self.down_button_name in self.buttons.keys() and self.game.M_DOWN:
+			if self.down_button_name == 'Space Invader Game':
+				self.game.music.stop()
+				self.game.music = self.game.space_invader_sfx['Music']
+				self.game.music.play(-1)
+			else:
+				self.game.music.stop()
+				self.game.music = self.game.egg_collector_sfx['Music']
+				self.game.music.play(-1)
 			self.game.switch_scene(self.title, self.down_button_name)
 
 
@@ -518,6 +575,15 @@ class DeadlineRunnersScene(Scene):
 			if self.down_button_name == 'Deadline Runners Game':
 				self.game.scenes[self.down_button_name].__init__(self.game, self.down_button_name)
 				self.game.switch_scene(self.title, self.down_button_name)
+				self.character_set = self.qualities['Character set'][self.game.ACCOUNT['Character set']]
+				self.game.music.stop()
+				if self.character_set == 'Deadliners':
+					self.game.music = self.game.deadline_runners_sfx['Deadliners']
+				elif self.character_set == 'Aquatica':
+					self.game.music = self.game.deadline_runners_sfx['Aquatica']
+				elif self.character_set == 'Chivalry':
+					self.game.music = self.game.deadline_runners_sfx['Chivalry']
+				self.game.music.play(-1)
 				return
 
 			if 'Left' in self.down_button_name:
@@ -657,11 +723,11 @@ class AccountsScene(Scene):
 		Scene.__init__(self, game, title)
 
 		self.buttons = {}
-		offset = self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 142).w // 2
+		offset = self.game.draw_text('Current Account', 25, self.game.GREEN, self.game.W // 2, self.game.H * 0.281 - 142, no_draw=True).w // 2
 
 		for i, v in self.game.ACCOUNTS.items():
 			if i != self.game.ACCOUNT['Name']:
-				offset = max(offset, self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 2, self.game.H // 2).w // 2)
+				offset = max(offset, self.game.draw_text(i, 35, self.game.WHITE, self.game.W // 2, self.game.H // 2, no_draw=True).w // 2)
 
 		count = 0
 		for i, v in self.game.ACCOUNTS.items():
@@ -672,8 +738,6 @@ class AccountsScene(Scene):
 			else:
 				self.buttons['History'] = Button(Surface(self.buttons_assets['ArrowBottom'].image), Surface(self.buttons_assets['History'].image))
 				self.buttons['History'].position(self.game.W // 2 - 100 - offset, self.game.H * 0.281 - 142 + 60 - 40)
-
-		self.game.draw_surface(self.background)
 
 
 	def check_button_input(self):
