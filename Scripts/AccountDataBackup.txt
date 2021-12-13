@@ -45,7 +45,7 @@ new account 3
 0
 press enter
 
-5000
+25000
 1
 1
 1

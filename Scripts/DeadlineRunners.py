@@ -486,7 +486,7 @@ class DeadlineRunnersGameScene(GameScene):
 					heapq.heappush(self.menu.event_queue, self.menu.Event(pygame.time.get_ticks() + self.menu.base_acceleration_cooldown // i, self.speed, (False, True)))
 				heapq.heappush(self.menu.event_queue, self.menu.Event(pygame.time.get_ticks() + self.menu.base_acceleration_cooldown, self.speed, (True, True)))
 			if self.skill_active and in_effect and not self.menu.background.active:
-				self.desired_vel = (self.menu.base_vel + self.menu.base_bias) * 2
+				self.desired_vel = (self.menu.base_vel + self.menu.base_bias)
 			if self.skill_active and active:
 				self.skill_active = False
 
@@ -523,6 +523,8 @@ class DeadlineRunnersGameScene(GameScene):
 		def update(self):
 			if not self.play_sheet:
 				self.cooldown = max(self.main_cooldown - (self.vel - self.menu.background.background[0].vel) * 50, 50)
+			if self.menu.game.ACCOUNT['Graphic'] <= 1:
+				self.cooldown = 1_000_000
 
 			super().update()
 
@@ -594,6 +596,10 @@ class DeadlineRunnersGameScene(GameScene):
 
 	def __init__(self, game, title):
 		GameScene.__init__(self, game, title)
+
+		self.fireworks = self.SpriteSheet(
+			self, self.game.W - 400, self.game.H // 2 - 450, 200, 600, self.game.deadline_runners_assets['Fireworks'].image, 0, 4, 200, 'w', 1.5
+		)
 
 		self.CHARACTERS = {
 			'Deadliners' : [
@@ -711,21 +717,19 @@ class DeadlineRunnersGameScene(GameScene):
 
 		self.object_sizes = []
 		if self.character_set == 'Deadliners':
-			self.objects = [
-				'DeadlinersObstacle', 'DeadlinersMovingObstacle', 'DeadlinersPoint'
-			]
+			self.objects = ['DeadlinersObstacle', 'DeadlinersMovingObstacle', 'DeadlinersPoint']
 			self.object_sizes = [
-				(self.cars[0].w * 3, self.cars[0].h * 3), (self.cars[0].w, self.cars[0].h), (100, 100)
+				(self.cars[0].w * 3, self.cars[0].h * 3), (self.cars[0].w // 2, self.cars[0].h // 2), (100, 100)
 			]
 		elif self.character_set == 'Aquatica':
 			self.objects = ['AquaticaObstacle', 'AquaticaMovingObstacle', 'AquaticaPoint']
 			self.object_sizes = [
-				(self.cars[0].w * 6, self.cars[0].h * 2), (self.cars[0].w, self.cars[0].h), (50, 50)
+				(400, 400), (200, 200), (50, 50)
 			]
 		elif self.character_set == 'Chivalry':
 			self.objects = ['ChivalryObstacle', 'ChivalryMovingObstacle', 'ChivalryPoint']
 			self.object_sizes = [
-				(self.cars[0].w * 6, self.cars[0].h * 3), (self.cars[0].w, self.cars[0].h), (100, 100)
+				(300, 300), (300, 300), (100, 100)
 			]
 
 		self.obstacles = [
@@ -1007,18 +1011,30 @@ class DeadlineRunnersGameScene(GameScene):
 			self.race_finished = True
 			heapq.heappush(self.event_queue, self.Event(pygame.time.get_ticks() + 4000, self.finish_gamble, ()))
 
-		self.background.draw()
+		if self.game.ACCOUNT['Graphic'] > 0:
+			self.background.draw()
 
-		for v in self.skills:
-			v.draw()
+			for v in self.skills:
+				v.draw()
 
-		for i in range(len(self.cars)):
-			if self.cars[i].active:
-				self.cars[i].draw()
-			if not self.race_finished:
-				self.obstacles[i].draw()
-				self.obstacles[len(self.cars) + i].draw()
-				self.points[i].draw()
+			for i in range(len(self.cars)):
+				if self.cars[i].active:
+					self.cars[i].draw()
+				if not self.race_finished:
+					self.obstacles[i].draw()
+					self.obstacles[len(self.cars) + i].draw()
+					self.points[i].draw()
+		else:
+			self.game.display.fill(self.game.BLACK)
+
+			for v in self.skills:
+				v.draw()
+
+			for i in range(len(self.cars)):
+				if self.cars[i].active:
+					self.cars[i].draw()
+				if not self.race_finished:
+					self.points[i].draw()
 
 		if self.lives <= 0:
 			self.reset_game()
@@ -1042,5 +1058,9 @@ class DeadlineRunnersGameScene(GameScene):
 
 		for v in self.skills:
 			v.update()
+
+		if self.race_finished:
+			self.fireworks.draw()
+			self.fireworks.update()
 
 		self.draw_buttons()
